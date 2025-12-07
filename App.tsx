@@ -4,8 +4,9 @@ import { Controls } from './components/Controls';
 import { VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from './constants';
 
 const App: React.FC = () => {
-  const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
+  const [gameState, setGameState] = useState<'START' | 'LEVEL_SELECT' | 'PLAYING' | 'GAMEOVER'>('START');
   const [score, setScore] = useState(0);
+  const [selectedLevel, setSelectedLevel] = useState(1);
   
   // Refs for inputs to avoid re-renders in game loop
   const inputsRef = useRef<Record<string, boolean>>({});
@@ -24,6 +25,10 @@ const App: React.FC = () => {
       setScore(0);
       setGameState('PLAYING');
       inputsRef.current = {};
+  }
+
+  const showLevelSelect = () => {
+      setGameState('LEVEL_SELECT');
   }
 
   return (
@@ -45,6 +50,7 @@ const App: React.FC = () => {
                 onScoreUpdate={setScore}
                 onGameOver={() => setGameState('GAMEOVER')}
                 onWin={() => {}}
+                initialLevel={selectedLevel}
               />
           )}
 
@@ -65,17 +71,53 @@ const App: React.FC = () => {
                       <p className="text-yellow-400">MISSION: CHARGE & RELEASE</p>
                       
                       <div className="bg-zinc-900 p-4 border border-zinc-700 text-left space-y-2">
-                        <p>👀 <span className="text-blue-400">STALK</span> girls to charge MANA.</p>
-                        <p>💥 Press <span className="text-blue-500 font-bold">RUNK</span> when fully charged near them.</p>
-                        <p>🚫 Avoid <span className="text-purple-400">EYES</span>! They DISTRACT you and reset MANA.</p>
-                        <p>⏳ Beat the clock to advance.</p>
+                        <p><span className="text-blue-400">STALK</span> girls to charge MANA.</p>
+                        <p>Press <span className="text-blue-500 font-bold">RUNK</span> when fully charged near them.</p>
+                        <p>Avoid <span className="text-purple-400">EYES</span>! They DISTRACT you and reset MANA.</p>
+                        <p>Beat the clock to advance.</p>
                       </div>
                   </div>
                   <button 
-                    onClick={startGame}
+                    onClick={showLevelSelect}
                     className="px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all w-full max-w-[200px]"
                   >
                       START MISSION
+                  </button>
+              </div>
+          )}
+
+          {gameState === 'LEVEL_SELECT' && (
+              <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6 overflow-y-auto">
+                  <h1 className="text-2xl md:text-3xl text-green-500 font-bold">
+                      SELECT LEVEL
+                  </h1>
+                  <div className="grid grid-cols-3 gap-3 max-w-xs w-full">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => (
+                          <button 
+                              key={level}
+                              onClick={() => {
+                                  setSelectedLevel(level);
+                                  startGame();
+                              }}
+                              className={`px-4 py-3 ${
+                                  selectedLevel === level 
+                                      ? 'bg-blue-600 hover:bg-blue-500' 
+                                      : 'bg-green-600 hover:bg-green-500'
+                              } text-white font-bold border-b-4 ${
+                                  selectedLevel === level 
+                                      ? 'border-blue-800' 
+                                      : 'border-green-800'
+                              } active:border-b-0 active:translate-y-1 transition-all text-sm`}
+                          >
+                              {level}
+                          </button>
+                      ))}
+                  </div>
+                  <button 
+                    onClick={() => setGameState('START')}
+                    className="px-6 py-3 bg-zinc-600 hover:bg-zinc-500 text-white font-bold border-b-4 border-zinc-800 active:border-b-0 active:translate-y-1 transition-all text-sm"
+                  >
+                      BACK
                   </button>
               </div>
           )}
