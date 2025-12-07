@@ -232,6 +232,15 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     ];
   };
 
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const generateUpgradeOptions = (): Upgrade[] => {
     const allUpgrades = getAllUpgrades();
     const player = playerRef.current;
@@ -241,15 +250,11 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     
     if (availableUpgrades.length === 0) {
       // If all upgrades are obtained, allow duplicates
-      return allUpgrades
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
+      return shuffleArray(allUpgrades).slice(0, 3);
     }
     
-    // Shuffle and take 3
-    return availableUpgrades
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.min(3, availableUpgrades.length));
+    // Use Fisher-Yates shuffle and take 3
+    return shuffleArray(availableUpgrades).slice(0, Math.min(3, availableUpgrades.length));
   };
 
   const applyUpgrade = (upgrade: Upgrade) => {
@@ -270,10 +275,11 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         break;
       case UpgradeType.EKSPLOSIV_AVGANG:
         // Extreme speed but higher detection range
-        player.speed = PLAYER_SPEED * 2;
+        player.speed *= 2;
         break;
       case UpgradeType.SPEED_BOOST:
-        player.speed = Math.max(player.speed, PLAYER_SPEED * 1.2);
+        // Multiplicative stacking for speed boosts
+        player.speed *= 1.2;
         break;
       case UpgradeType.HEALTH_REGEN:
         // Reduces confusion timer - handled passively
@@ -596,11 +602,17 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         // BUSH STEALTH: If player is in bush, enemies can't see them unless they're charging
         // Check if player is charging by seeing if there are active links
         const isCharging = chargingSourceCount > 0 || activeLinksRef.current.length > 0;
-        if (isEnemy && player.inBush && !isCharging) {
-            // Apply Busk-Wookie upgrade bonus - even harder to detect
-            const hasBuskWookie = player.upgrades.includes(UpgradeType.BUSK_WOOKIE);
-            if (hasBuskWookie || !isCharging) {
-                canSeePlayer = false; // Can't see player in bush
+        const hasBuskWookie = player.upgrades.includes(UpgradeType.BUSK_WOOKIE);
+        
+        if (isEnemy && player.inBush) {
+            // Base bush stealth: invisible when not charging
+            if (!isCharging) {
+                canSeePlayer = false;
+            } else if (hasBuskWookie) {
+                // Busk-Wookie upgrade: even when charging, 70% chance to remain hidden
+                if (Math.random() < 0.7) {
+                    canSeePlayer = false;
+                }
             }
         }
         
@@ -627,8 +639,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         }
 
         // --- ALERT LOGIC ---
-        // Busk-Wookie upgrade makes detection distance smaller
-        const hasBuskWookie = player.upgrades.includes(UpgradeType.BUSK_WOOKIE);
+        // Busk-Wookie upgrade makes detection distance smaller (already declared above)
         const detectionModifier = hasBuskWookie ? 0.7 : 1.0;
         
         // Eksplosiv Avgang increases detection range (high risk)
