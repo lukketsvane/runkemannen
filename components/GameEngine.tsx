@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType } from '../types';
-import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, FPS } from '../constants';
+import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
 // --- Utils ---
@@ -44,21 +44,21 @@ interface LevelConfig {
 
 const getLevelConfig = (level: number): LevelConfig => {
     switch(level) {
-        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.05, timeLimit: 60 }; 
-        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.10, timeLimit: 75 }; 
-        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.15, timeLimit: 90 }; 
-        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.18, timeLimit: 100 };
-        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.20, timeLimit: 110 };
-        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.22, timeLimit: 120 };
-        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.25, timeLimit: 120 };
-        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.28, timeLimit: 130 };
-        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.32, timeLimit: 140 };
-        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.35, timeLimit: 150 };
+        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 90 }; // Tutorial level - easy, more time
+        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 90 }; // Learn multiple targets
+        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.12, timeLimit: 100 }; // Introduce enemies
+        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.15, timeLimit: 110 }; // More targets
+        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.18, timeLimit: 120 }; // More enemies
+        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.20, timeLimit: 130 }; // Balanced challenge
+        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.23, timeLimit: 135 }; // Getting harder
+        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.26, timeLimit: 140 }; // Many targets
+        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.29, timeLimit: 145 }; // Intense
+        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.32, timeLimit: 150 }; // Boss level
         default: return { 
-            girls: Math.min(12, Math.floor(level/2) + 2), 
-            eyes: Math.min(10, Math.floor(level/3) + 2), 
-            obstacleDensity: Math.min(0.45, 0.35 + (level - 10) * 0.02), 
-            timeLimit: Math.min(180, 150 + (level - 10) * 5) 
+            girls: Math.min(12, Math.floor(level/2) + 3), 
+            eyes: Math.min(10, Math.floor(level/2.5) + 2), 
+            obstacleDensity: Math.min(0.40, 0.32 + (level - 10) * 0.015), 
+            timeLimit: Math.min(180, 150 + (level - 10) * 4) 
         };
     }
 };
@@ -69,10 +69,23 @@ interface GameEngineProps {
   onScoreUpdate: (score: number) => void;
   onGameOver: () => void;
   onWin: () => void;
+  onLevelChange?: (level: number) => void;
+  onPauseRequest?: () => void;
+  isPaused?: boolean;
   initialLevel?: number;
 }
 
-export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, onScoreUpdate, onGameOver, onWin, initialLevel = 1 }) => {
+export const GameEngine: React.FC<GameEngineProps> = ({ 
+  inputs, 
+  actionTrigger, 
+  onScoreUpdate, 
+  onGameOver, 
+  onWin, 
+  onLevelChange,
+  onPauseRequest,
+  isPaused = false,
+  initialLevel = 1 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
   
@@ -299,7 +312,12 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
         
         // --- CHARGING MECHANIC (Only Girls) ---
         // Player CANNOT charge if distracted (confusedTimer > 0)
-        if (!isEnemy && !npc.alerted && canSeePlayer && dist < CHARGE_DISTANCE && player.confusedTimer <= 0) {
+        // Girls stop charging if player is moving or too close (they notice)
+        const playerIsMoving = dx !== 0 || dy !== 0;
+        const tooCloseToCharge = dist < DETECTION_PROXIMITY_THRESHOLD;
+        const girlsNoticed = playerIsMoving && tooCloseToCharge;
+        
+        if (!isEnemy && !npc.alerted && canSeePlayer && dist < CHARGE_DISTANCE && player.confusedTimer <= 0 && !girlsNoticed) {
             player.mana = Math.min(player.maxMana, player.mana + CHARGE_RATE);
             activeLinksRef.current.push({x: npc.x + 8, y: npc.y + 8});
             chargingSourceCount++;
@@ -457,6 +475,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
     const targetsRemaining = npcsRef.current.filter(n => n.type !== NpcType.ENEMY_EYE).length;
     if (targetsRemaining === 0) {
         levelRef.current++;
+        if (onLevelChange) onLevelChange(levelRef.current);
         initLevel(levelRef.current);
     }
   };
@@ -644,11 +663,13 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
 
-    update();
+    if (!isPaused) {
+      update();
+    }
     draw(ctx);
 
     requestRef.current = requestAnimationFrame(gameLoop);
-  }, []);
+  }, [isPaused]);
 
   useEffect(() => {
     spritesRef.current = loadSprites();
@@ -662,11 +683,25 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
   }, [gameLoop, initialLevel]);
 
   return (
-    <canvas 
-        ref={canvasRef} 
-        width={VIRTUAL_WIDTH} 
-        height={VIRTUAL_HEIGHT}
-        className="w-full h-full object-contain bg-black shadow-2xl"
-    />
+    <div className="relative w-full h-full">
+      <canvas 
+          ref={canvasRef} 
+          width={VIRTUAL_WIDTH} 
+          height={VIRTUAL_HEIGHT}
+          className="w-full h-full object-contain bg-black shadow-2xl"
+      />
+      {/* Clickable level indicator overlay */}
+      {onPauseRequest && (
+        <div 
+          onClick={onPauseRequest}
+          className="absolute bottom-2 left-2 cursor-pointer hover:opacity-80 transition-opacity"
+          style={{ 
+            width: '80px', 
+            height: '20px',
+            pointerEvents: 'auto'
+          }}
+        />
+      )}
+    </div>
   );
 };
