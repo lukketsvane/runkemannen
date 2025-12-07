@@ -160,6 +160,8 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const levelRef = useRef(1);
   const timeLeftRef = useRef(0); // In Frames
   const spritesRef = useRef<Record<string, HTMLImageElement>>({});
+  const speedBoostTimerRef = useRef(0); // Frames remaining for speed boost
+  const stealthTimerRef = useRef(0); // Frames remaining for stealth
   const [collectedMessage, setCollectedMessage] = useState<string | null>(null);
 
   const spawnSplat = (x: number, y: number, color: string = '#ffffff') => {
@@ -356,6 +358,21 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
     // 0. Status Effects
     if (player.confusedTimer > 0) player.confusedTimer--;
+    
+    // Handle active item timers
+    if (speedBoostTimerRef.current > 0) {
+        speedBoostTimerRef.current--;
+        if (speedBoostTimerRef.current === 0) {
+            player.speed = PLAYER_SPEED;
+        }
+    }
+    
+    if (stealthTimerRef.current > 0) {
+        stealthTimerRef.current--;
+        if (stealthTimerRef.current === 0 && player.confusedTimer < 0) {
+            player.confusedTimer = 0;
+        }
+    }
 
     // 1. Player Movement
     let dx = 0;
@@ -612,12 +629,12 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                     break;
                 case ItemType.SPEED_BOOST:
                     player.speed = PLAYER_SPEED * 1.3;
-                    setTimeout(() => { player.speed = PLAYER_SPEED; }, 5000);
+                    speedBoostTimerRef.current = 5 * FPS; // 5 seconds
                     break;
                 case ItemType.STEALTH_CLOAK:
                     // Temporarily make player invisible to enemies
                     player.confusedTimer = -120; // Negative = invincible
-                    setTimeout(() => { if (player.confusedTimer < 0) player.confusedTimer = 0; }, 3000);
+                    stealthTimerRef.current = 3 * FPS; // 3 seconds
                     break;
                 case ItemType.TIME_FREEZE:
                     timeLeftRef.current += 30 * FPS; // Add 30 seconds
