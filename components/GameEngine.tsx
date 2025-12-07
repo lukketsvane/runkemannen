@@ -69,9 +69,10 @@ interface GameEngineProps {
   onScoreUpdate: (score: number) => void;
   onGameOver: () => void;
   onWin: () => void;
+  initialLevel?: number;
 }
 
-export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, onScoreUpdate, onGameOver, onWin }) => {
+export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, onScoreUpdate, onGameOver, onWin, initialLevel = 1 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
   
@@ -651,13 +652,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
 
   useEffect(() => {
     spritesRef.current = loadSprites();
-    initLevel(1);
+    levelRef.current = initialLevel;
+    initLevel(initialLevel);
     
     requestRef.current = requestAnimationFrame(gameLoop);
     return () => {
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
     }
-  }, [gameLoop]);
+  }, [gameLoop, initialLevel]);
 
   return (
     <canvas 
