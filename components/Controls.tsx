@@ -8,6 +8,21 @@ interface ControlsProps {
 export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction }) => {
   const dpadRef = useRef<HTMLDivElement>(null);
   const [activeDir, setActiveDir] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
+  const hideTimeoutRef = useRef<number | null>(null);
+
+  // Reset the hide timer and make controls visible
+  const resetHideTimer = () => {
+    setIsVisible(true);
+    
+    if (hideTimeoutRef.current !== null) {
+      window.clearTimeout(hideTimeoutRef.current);
+    }
+    
+    hideTimeoutRef.current = window.setTimeout(() => {
+      setIsVisible(false);
+    }, 3000); // Hide after 3 seconds of inactivity
+  };
 
   // Clear all inputs to prevent sticking
   const clearInput = () => {
@@ -16,6 +31,7 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   };
 
   const handleMove = (clientX: number, clientY: number) => {
+      resetHideTimer(); // Reset timer on movement
       if (!dpadRef.current) return;
       
       const rect = dpadRef.current.getBoundingClientRect();
@@ -84,12 +100,14 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   const handleAction = (e: React.TouchEvent | React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      resetHideTimer(); // Reset timer on action
       onAction();
   }
 
   // Keyboard controls
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+          resetHideTimer(); // Reset timer on keyboard input
           const key = e.key.toLowerCase();
           
           // Movement controls - WASD
@@ -130,8 +148,14 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('keyup', handleKeyUp);
       
+      // Start the initial hide timer
+      resetHideTimer();
+      
       return () => {
           clearInput();
+          if (hideTimeoutRef.current !== null) {
+              window.clearTimeout(hideTimeoutRef.current);
+          }
           window.removeEventListener('keydown', handleKeyDown);
           window.removeEventListener('keyup', handleKeyUp);
       };
@@ -141,7 +165,7 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   const isPressed = (dir: string) => activeDir === dir;
 
   return (
-    <div className="absolute bottom-6 left-0 right-0 px-6 flex justify-between items-end select-none z-30 pointer-events-none">
+    <div className={`absolute bottom-6 left-0 right-0 px-6 flex justify-between items-end select-none z-30 pointer-events-none transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       
       {/* D-PAD Area - Enable pointer events here */}
       <div 
