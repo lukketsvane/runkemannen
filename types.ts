@@ -44,6 +44,8 @@ export interface Player extends Entity {
   mana: number;       // 0 to 100
   maxMana: number;    // 100
   confusedTimer: number; // Frames remaining for "Lost Control"
+  inBush: boolean;    // Whether player is currently in a bush
+  upgrades: UpgradeType[]; // Active upgrades for this run
 }
 
 export interface Npc extends Entity {
@@ -85,4 +87,34 @@ export interface GameState {
 export interface Point {
   x: number;
   y: number;
+}
+
+export interface Bush {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+export enum UpgradeRarity {
+  COMMON = 'Common',
+  RARE = 'Rare',
+  EPIC = 'Epic',
+  LEGENDARY = 'Legendary'
+}
+
+export enum UpgradeType {
+  LYNRASK_NEVER = 'lynrask_never',
+  BUSK_WOOKIE = 'busk_wookie',
+  EKSPLOSIV_AVGANG = 'eksplosiv_avgang',
+  SPEED_BOOST = 'speed_boost',
+  HEALTH_REGEN = 'health_regen',
+  TIME_EXTENSION = 'time_extension'
+}
+
+export interface Upgrade {
+  type: UpgradeType;
+  rarity: UpgradeRarity;
+  name: string;
+  description: string;
+  icon: string;
 }
