@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType } from '../types';
-import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, FPS } from '../constants';
+import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
 // --- Utils ---
@@ -314,7 +314,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         // Player CANNOT charge if distracted (confusedTimer > 0)
         // Girls stop charging if player is moving or too close (they notice)
         const playerIsMoving = dx !== 0 || dy !== 0;
-        const tooCloseToCharge = dist < 50; // Girls notice if player is closer than 50px
+        const tooCloseToCharge = dist < DETECTION_PROXIMITY_THRESHOLD;
         const girlsNoticed = playerIsMoving && tooCloseToCharge;
         
         if (!isEnemy && !npc.alerted && canSeePlayer && dist < CHARGE_DISTANCE && player.confusedTimer <= 0 && !girlsNoticed) {

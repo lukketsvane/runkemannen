@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { AUTO_HIDE_DELAY_MS } from '../constants';
 
 interface ControlsProps {
   onInputStateChange: (key: string, pressed: boolean) => void;
@@ -21,7 +22,7 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
     
     hideTimeoutRef.current = window.setTimeout(() => {
       setIsVisible(false);
-    }, 3000); // Hide after 3 seconds of inactivity
+    }, AUTO_HIDE_DELAY_MS);
   };
 
   // Clear all inputs to prevent sticking
