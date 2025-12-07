@@ -75,18 +75,23 @@ const drawGirl = (ctx: CanvasRenderingContext2D, frame: number, dir: number, var
     // Legs (skin-colored, naked)
     ctx.fillStyle = skin; 
     if (dir === 0 || dir === 3) {
-        ctx.fillRect(6, 12, 2, 4, skin);
-        ctx.fillRect(9, 12, 2, 4, skin);
+        ctx.fillRect(6, 12, 2, 4);
+        ctx.fillRect(9, 12, 2, 4);
         // Leg shading
-        ctx.fillRect(7, 13, 1, 3, skinShade);
-        ctx.fillRect(10, 13, 1, 3, skinShade);
+        ctx.fillStyle = skinShade;
+        ctx.fillRect(7, 13, 1, 3);
+        ctx.fillRect(10, 13, 1, 3);
     } else {
          if (frame === 1) {
-             ctx.fillRect(4, 11, 3, 5, skin);
-             ctx.fillRect(5, 12, 1, 4, skinShade);
+             ctx.fillStyle = skin;
+             ctx.fillRect(4, 11, 3, 5);
+             ctx.fillStyle = skinShade;
+             ctx.fillRect(5, 12, 1, 4);
          } else {
-             ctx.fillRect(6, 12, 4, 4, skin);
-             ctx.fillRect(7, 13, 2, 3, skinShade);
+             ctx.fillStyle = skin;
+             ctx.fillRect(6, 12, 4, 4);
+             ctx.fillStyle = skinShade;
+             ctx.fillRect(7, 13, 2, 3);
          }
     }
 

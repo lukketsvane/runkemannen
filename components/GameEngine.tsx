@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType, Item, ItemType, Bush, Upgrade, UpgradeRarity, UpgradeType } from '../types';
-import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE, BUSH_RADIUS, MANA_DECAY_RATE } from '../constants';
+import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE, BUSH_RADIUS, MANA_DECAY_RATE, SUNGLASSES_STEALTH_TIME } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
 // --- Utils ---
@@ -787,6 +787,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     // MANA DECAY MECHANIC (Hades-style)
     // Player loses mana when not charging from girls
     // Game over when mana reaches 0
+    // Note: confusedTimer <= 0 means normal state (not confused)
+    // confusedTimer > 0 = confused/distracted (no decay as additional punishment)
+    // confusedTimer < 0 = stealth mode (no decay as reward)
     if (chargingSourceCount === 0 && player.confusedTimer <= 0) {
         player.mana = Math.max(0, player.mana - MANA_DECAY_RATE);
         
@@ -838,7 +841,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                 case ItemType.SUNGLASSES:
                     // Sunglasses: Reduce detection range for enemies temporarily
                     stealthTimerRef.current = 8 * FPS; // 8 seconds of reduced detection
-                    player.confusedTimer = -180; // Extra stealth time
+                    player.confusedTimer = -SUNGLASSES_STEALTH_TIME; // Extra stealth time
                     break;
                 case ItemType.LORE_NOTE:
                     if (item.message) {
