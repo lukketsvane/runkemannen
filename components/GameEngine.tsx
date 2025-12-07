@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType, Item, ItemType, Bush, Upgrade, UpgradeRarity, UpgradeType } from '../types';
-import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE, BUSH_RADIUS } from '../constants';
+import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE, BUSH_RADIUS, MANA_DECAY_RATE, SUNGLASSES_STEALTH_TIME } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
 // --- Utils ---
@@ -65,7 +65,7 @@ interface LevelConfig {
     girls: number;
     eyes: number;
     obstacleDensity: number; // 0 to 1
-    timeLimit: number; // Seconds
+    timeLimit: number; // Not used anymore, kept for compatibility
     items?: number; // Number of items to spawn
     bushes?: number; // Number of bushes to spawn
     isBossLevel?: boolean; // Special boss mode
@@ -76,46 +76,46 @@ const getLevelConfig = (level: number): LevelConfig => {
     if (level === 25) {
         return { 
             girls: 3, 
-            eyes: 0, 
+            eyes: 0, // No eyes in boss level
             obstacleDensity: 0.25, 
-            timeLimit: 180,
-            items: 2,
+            timeLimit: 9999,
+            items: 3,
             bushes: 4,
             isBossLevel: true
         };
     }
     
-    // Regular levels 1-24
+    // Regular levels 1-24 - REDUCED eye enemies, more focus on girls
     switch(level) {
-        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 90, items: 1, bushes: 2 };
-        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 90, items: 1, bushes: 2 };
-        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.12, timeLimit: 100, items: 1, bushes: 3 };
-        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.15, timeLimit: 110, items: 2, bushes: 3 };
-        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.18, timeLimit: 120, items: 2, bushes: 4 };
-        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.20, timeLimit: 130, items: 2, bushes: 4 };
-        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.23, timeLimit: 135, items: 2, bushes: 5 };
-        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.26, timeLimit: 140, items: 3, bushes: 5 };
-        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.29, timeLimit: 145, items: 3, bushes: 6 };
-        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.32, timeLimit: 150, items: 3, bushes: 6 };
-        case 11: return { girls: 6, eyes: 5, obstacleDensity: 0.33, timeLimit: 150, items: 3, bushes: 6 };
-        case 12: return { girls: 7, eyes: 6, obstacleDensity: 0.34, timeLimit: 155, items: 3, bushes: 7 };
-        case 13: return { girls: 7, eyes: 6, obstacleDensity: 0.35, timeLimit: 155, items: 4, bushes: 7 };
-        case 14: return { girls: 8, eyes: 7, obstacleDensity: 0.36, timeLimit: 160, items: 4, bushes: 8 };
-        case 15: return { girls: 8, eyes: 7, obstacleDensity: 0.37, timeLimit: 160, items: 4, bushes: 8 };
-        case 16: return { girls: 9, eyes: 8, obstacleDensity: 0.38, timeLimit: 165, items: 4, bushes: 8 };
-        case 17: return { girls: 9, eyes: 8, obstacleDensity: 0.39, timeLimit: 165, items: 4, bushes: 9 };
-        case 18: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5, bushes: 9 };
-        case 19: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5, bushes: 10 };
-        case 20: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5, bushes: 10 };
-        case 21: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5, bushes: 10 };
-        case 22: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5, bushes: 11 };
-        case 23: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5, bushes: 11 };
-        case 24: return { girls: 12, eyes: 12, obstacleDensity: 0.40, timeLimit: 180, items: 6, bushes: 12 };
+        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 9999, items: 1, bushes: 2 };
+        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 9999, items: 1, bushes: 2 };
+        case 3: return { girls: 2, eyes: 0, obstacleDensity: 0.12, timeLimit: 9999, items: 1, bushes: 3 };
+        case 4: return { girls: 3, eyes: 0, obstacleDensity: 0.15, timeLimit: 9999, items: 2, bushes: 3 };
+        case 5: return { girls: 3, eyes: 1, obstacleDensity: 0.18, timeLimit: 9999, items: 2, bushes: 4 };
+        case 6: return { girls: 4, eyes: 1, obstacleDensity: 0.20, timeLimit: 9999, items: 2, bushes: 4 };
+        case 7: return { girls: 4, eyes: 1, obstacleDensity: 0.23, timeLimit: 9999, items: 2, bushes: 5 };
+        case 8: return { girls: 5, eyes: 1, obstacleDensity: 0.26, timeLimit: 9999, items: 3, bushes: 5 };
+        case 9: return { girls: 5, eyes: 2, obstacleDensity: 0.29, timeLimit: 9999, items: 3, bushes: 6 };
+        case 10: return { girls: 6, eyes: 2, obstacleDensity: 0.32, timeLimit: 9999, items: 3, bushes: 6 };
+        case 11: return { girls: 6, eyes: 2, obstacleDensity: 0.33, timeLimit: 9999, items: 3, bushes: 6 };
+        case 12: return { girls: 7, eyes: 2, obstacleDensity: 0.34, timeLimit: 9999, items: 3, bushes: 7 };
+        case 13: return { girls: 7, eyes: 2, obstacleDensity: 0.35, timeLimit: 9999, items: 4, bushes: 7 };
+        case 14: return { girls: 8, eyes: 3, obstacleDensity: 0.36, timeLimit: 9999, items: 4, bushes: 8 };
+        case 15: return { girls: 8, eyes: 3, obstacleDensity: 0.37, timeLimit: 9999, items: 4, bushes: 8 };
+        case 16: return { girls: 9, eyes: 3, obstacleDensity: 0.38, timeLimit: 9999, items: 4, bushes: 8 };
+        case 17: return { girls: 9, eyes: 3, obstacleDensity: 0.39, timeLimit: 9999, items: 4, bushes: 9 };
+        case 18: return { girls: 10, eyes: 4, obstacleDensity: 0.40, timeLimit: 9999, items: 5, bushes: 9 };
+        case 19: return { girls: 10, eyes: 4, obstacleDensity: 0.40, timeLimit: 9999, items: 5, bushes: 10 };
+        case 20: return { girls: 11, eyes: 4, obstacleDensity: 0.40, timeLimit: 9999, items: 5, bushes: 10 };
+        case 21: return { girls: 11, eyes: 5, obstacleDensity: 0.40, timeLimit: 9999, items: 5, bushes: 10 };
+        case 22: return { girls: 12, eyes: 5, obstacleDensity: 0.40, timeLimit: 9999, items: 5, bushes: 11 };
+        case 23: return { girls: 12, eyes: 5, obstacleDensity: 0.40, timeLimit: 9999, items: 5, bushes: 11 };
+        case 24: return { girls: 12, eyes: 6, obstacleDensity: 0.40, timeLimit: 9999, items: 6, bushes: 12 };
         default: return { 
             girls: Math.min(15, Math.floor(level/2) + 3), 
-            eyes: Math.min(15, Math.floor(level/2.5) + 2), 
+            eyes: Math.min(8, Math.floor(level/4) + 1), // Reduced from /2.5+2 to /4+1 for less enemy focus
             obstacleDensity: 0.40, 
-            timeLimit: 180,
+            timeLimit: 9999,
             items: 3,
             bushes: Math.min(12, 8 + Math.floor(level / 10))
         };
@@ -343,7 +343,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
     playerRef.current.x = TILE_SIZE * 2;
     playerRef.current.y = TILE_SIZE * 2;
-    playerRef.current.mana = 0;
+    playerRef.current.mana = 50; // Start with half mana (Hades-style)
     playerRef.current.confusedTimer = 0;
 
     npcsRef.current = [];
@@ -484,14 +484,10 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     const player = playerRef.current;
     activeLinksRef.current = [];
     
-    // --- Global Time Limit ---
-    if (timeLeftRef.current > 0) {
-        timeLeftRef.current--;
-    } else {
-        onGameOver();
-        return;
-    }
-
+    // --- Mana Decay Mechanic (Hades-style) ---
+    // Player loses mana over time when not charging
+    // Game over if mana reaches 0
+    
     // 0. Status Effects
     // Health Regen upgrade - recover from confusion faster
     const hasHealthRegen = player.upgrades.includes(UpgradeType.HEALTH_REGEN);
@@ -782,11 +778,29 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                     onScoreUpdate(scoreRef.current);
                     spawnSplat(npc.x, npc.y, '#ffffff');
                     npcsRef.current.splice(i, 1);
+                    // Refill mana after successful completion
+                    player.mana = player.maxMana;
                 }
                 actionTrigger.current = false; 
             }
         }
     };
+
+    // MANA DECAY MECHANIC (Hades-style)
+    // Player loses mana when not charging from girls
+    // Game over when mana reaches 0
+    // Note: confusedTimer <= 0 means normal state (not confused)
+    // confusedTimer > 0 = confused/distracted (no decay as additional punishment)
+    // confusedTimer < 0 = stealth mode (no decay as reward)
+    if (chargingSourceCount === 0 && player.confusedTimer <= 0) {
+        player.mana = Math.max(0, player.mana - MANA_DECAY_RATE);
+        
+        // GAME OVER when mana depletes
+        if (player.mana === 0) {
+            onGameOver();
+            return;
+        }
+    }
 
     for (let i = particlesRef.current.length - 1; i >= 0; i--) {
         const p = particlesRef.current[i];
@@ -823,7 +837,21 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                     stealthTimerRef.current = 3 * FPS; // 3 seconds
                     break;
                 case ItemType.TIME_FREEZE:
-                    timeLeftRef.current += 30 * FPS; // Add 30 seconds
+                    // Not used anymore, give mana boost instead
+                    player.mana = Math.min(player.maxMana, player.mana + 30);
+                    break;
+                case ItemType.SUNGLASSES:
+                    // Sunglasses: Reduce detection range for enemies temporarily
+                    stealthTimerRef.current = Math.max(stealthTimerRef.current, 8 * FPS); // 8 seconds of reduced detection (extend if already active)
+                    // Stealth is represented by negative confusedTimer values
+                    // More negative = longer stealth duration
+                    if (player.confusedTimer >= 0) {
+                        // Not in stealth, activate it
+                        player.confusedTimer = -SUNGLASSES_STEALTH_TIME;
+                    } else {
+                        // Already in stealth, extend it (more negative = longer)
+                        player.confusedTimer -= SUNGLASSES_STEALTH_TIME;
+                    }
                     break;
                 case ItemType.LORE_NOTE:
                     if (item.message) {
@@ -932,6 +960,10 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             case ItemType.TIME_FREEZE:
                 color = '#00ff00';
                 symbol = '⏱';
+                break;
+            case ItemType.SUNGLASSES:
+                color = '#000000';
+                symbol = '🕶';
                 break;
             case ItemType.LORE_NOTE:
                 color = '#ffaa00';
@@ -1096,18 +1128,18 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         ctx.fillText(statusText, VIRTUAL_WIDTH/2, by - 4);
     }
 
-    // Level Info
+    // Level Info (Changed to "d" for depth like Hades)
     ctx.fillStyle = '#fff';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
-    const levelText = levelRef.current === 25 ? 'nivå 25: boss' : `nivå ${levelRef.current}`;
+    const levelText = levelRef.current === 25 ? 'd25: boss' : `d${levelRef.current}`;
     ctx.fillText(levelText, 10, VIRTUAL_HEIGHT - 10);
 
-    // Timer
-    const secondsLeft = Math.ceil(timeLeftRef.current / FPS);
+    // Mana percentage (instead of timer)
+    const manaPercent = Math.floor((player.mana / player.maxMana) * 100);
     ctx.textAlign = 'right';
-    ctx.fillStyle = secondsLeft < 10 ? '#ff0000' : '#fff';
-    ctx.fillText(`tid: ${secondsLeft}`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
+    ctx.fillStyle = manaPercent < 20 ? '#ff0000' : '#fff';
+    ctx.fillText(`${manaPercent}%`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
     
     // Lore message display
     if (collectedMessage) {

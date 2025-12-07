@@ -81,13 +81,14 @@ const App: React.FC = () => {
                       runke<br/>mannen
                   </h1>
                   <div className="space-y-3 text-zinc-300 text-xs leading-relaxed max-w-xs">
-                      <p className="text-yellow-400">oppdrag: klar for avgang</p>
+                      <p className="text-yellow-400">oppdrag: overlev på stranda</p>
                       
                       <div className="bg-zinc-900 p-4 border border-zinc-700 text-left space-y-2">
-                        <p><span className="text-blue-400">snike</span> seg nær jentene for å lade opp.</p>
+                        <p><span className="text-blue-400">snike</span> seg nær dei nakne jentene for å lade opp.</p>
                         <p>trykk <span className="text-blue-500 font-bold">runk</span> raskt og gjentatte ganger når du er fulladet og nær dei.</p>
-                        <p>unngå <span className="text-purple-400">auga</span>! dei distraherer deg og nullstiller lading.</p>
-                        <p>slå klokka for å gå vidare.</p>
+                        <p>unngå <span className="text-purple-400">auga</span> – dei distraherer deg.</p>
+                        <p><span className="text-red-400">mistek du for mykje lading, er det game over!</span></p>
+                        <p>finn <span className="text-yellow-400">solbriller</span> for ekstra stealth.</p>
                       </div>
                       
                       <div className="bg-blue-900/30 p-3 border border-blue-700/50 text-xs text-blue-300">
@@ -106,7 +107,7 @@ const App: React.FC = () => {
           {gameState === 'LEVEL_SELECT' && (
               <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6 overflow-y-auto">
                   <h1 className="text-2xl md:text-3xl text-green-500 font-bold">
-                      velg nivå
+                      velg djup (d)
                   </h1>
                   <div className="grid grid-cols-5 gap-3 max-w-md w-full">
                       {Array.from({length: 25}, (_, i) => i + 1).map(level => (
@@ -145,7 +146,8 @@ const App: React.FC = () => {
 
           {gameState === 'GAMEOVER' && (
               <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-8">
-                  <h1 className="text-4xl text-red-500 font-bold">tida er ute!</h1>
+                  <h1 className="text-4xl text-red-500 font-bold">mista lading!</h1>
+                  <p className="text-zinc-300">tom for energi...</p>
                   <button 
                     onClick={restartLevel}
                     className="px-8 py-4 bg-white text-black font-bold hover:bg-zinc-200 transition-all"
