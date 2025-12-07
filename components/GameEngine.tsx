@@ -44,21 +44,21 @@ interface LevelConfig {
 
 const getLevelConfig = (level: number): LevelConfig => {
     switch(level) {
-        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.05, timeLimit: 45 }; 
-        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.15, timeLimit: 60 }; 
-        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.15, timeLimit: 60 }; 
-        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.20, timeLimit: 75 };
-        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.20, timeLimit: 75 };
-        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.25, timeLimit: 90 };
-        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.25, timeLimit: 90 };
-        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.30, timeLimit: 100 };
-        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.30, timeLimit: 110 };
-        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.40, timeLimit: 120 };
+        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.05, timeLimit: 60 }; 
+        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.10, timeLimit: 75 }; 
+        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.15, timeLimit: 90 }; 
+        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.18, timeLimit: 100 };
+        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.20, timeLimit: 110 };
+        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.22, timeLimit: 120 };
+        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.25, timeLimit: 120 };
+        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.28, timeLimit: 130 };
+        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.32, timeLimit: 140 };
+        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.35, timeLimit: 150 };
         default: return { 
             girls: Math.min(12, Math.floor(level/2) + 2), 
             eyes: Math.min(10, Math.floor(level/3) + 2), 
-            obstacleDensity: 0.4, 
-            timeLimit: 120 
+            obstacleDensity: Math.min(0.45, 0.35 + (level - 10) * 0.02), 
+            timeLimit: Math.min(180, 150 + (level - 10) * 5) 
         };
     }
 };
@@ -622,7 +622,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
         ctx.fillStyle = '#fff';
         ctx.font = '8px monospace';
         ctx.textAlign = 'center';
-        let statusText = fillPct >= 1.0 ? "READY!" : "CHARGE";
+        let statusText = fillPct >= 1.0 ? "KLAR!" : "LADER";
         ctx.fillText(statusText, VIRTUAL_WIDTH/2, by - 4);
     }
 
@@ -630,13 +630,13 @@ export const GameEngine: React.FC<GameEngineProps> = ({ inputs, actionTrigger, o
     ctx.fillStyle = '#fff';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`LVL ${levelRef.current}`, 10, VIRTUAL_HEIGHT - 10);
+    ctx.fillText(`NIVÅ ${levelRef.current}`, 10, VIRTUAL_HEIGHT - 10);
 
     // Timer
     const secondsLeft = Math.ceil(timeLeftRef.current / FPS);
     ctx.textAlign = 'right';
     ctx.fillStyle = secondsLeft < 10 ? '#ff0000' : '#fff';
-    ctx.fillText(`TIME: ${secondsLeft}`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
+    ctx.fillText(`TID: ${secondsLeft}`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
   };
 
   const gameLoop = useCallback(() => {

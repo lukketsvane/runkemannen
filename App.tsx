@@ -57,7 +57,7 @@ const App: React.FC = () => {
           {/* UI Layer */}
           <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-10 flex justify-between">
               <div className="text-yellow-400 font-bold drop-shadow-md border-2 border-black bg-zinc-900 px-2 py-1">
-                  SCORE: {score.toString().padStart(5, '0')}
+                  POENG: {score.toString().padStart(5, '0')}
               </div>
           </div>
 
@@ -68,20 +68,20 @@ const App: React.FC = () => {
                       RUNKE<br/>MANNEN
                   </h1>
                   <div className="space-y-3 text-zinc-300 text-xs leading-relaxed max-w-xs">
-                      <p className="text-yellow-400">MISSION: CHARGE & RELEASE</p>
+                      <p className="text-yellow-400">OPPDRAG: KLAR FOR AVGANG</p>
                       
                       <div className="bg-zinc-900 p-4 border border-zinc-700 text-left space-y-2">
-                        <p><span className="text-blue-400">STALK</span> girls to charge MANA.</p>
-                        <p>Press <span className="text-blue-500 font-bold">RUNK</span> when fully charged near them.</p>
-                        <p>Avoid <span className="text-purple-400">EYES</span>! They DISTRACT you and reset MANA.</p>
-                        <p>Beat the clock to advance.</p>
+                        <p><span className="text-blue-400">SNIKE</span> seg nær jentene for å lade opp.</p>
+                        <p>Trykk <span className="text-blue-500 font-bold">RUNK</span> når du er fulladet og nær dei.</p>
+                        <p>Unngå <span className="text-purple-400">AUGA</span>! Dei distraherer deg og nullstiller lading.</p>
+                        <p>Slå klokka for å gå vidare.</p>
                       </div>
                   </div>
                   <button 
                     onClick={showLevelSelect}
                     className="px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all w-full max-w-[200px]"
                   >
-                      START MISSION
+                      START OPPDRAG
                   </button>
               </div>
           )}
@@ -89,7 +89,7 @@ const App: React.FC = () => {
           {gameState === 'LEVEL_SELECT' && (
               <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6 overflow-y-auto">
                   <h1 className="text-2xl md:text-3xl text-green-500 font-bold">
-                      SELECT LEVEL
+                      VELG NIVÅ
                   </h1>
                   <div className="grid grid-cols-3 gap-3 max-w-xs w-full">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => (
@@ -117,20 +117,20 @@ const App: React.FC = () => {
                     onClick={() => setGameState('START')}
                     className="px-6 py-3 bg-zinc-600 hover:bg-zinc-500 text-white font-bold border-b-4 border-zinc-800 active:border-b-0 active:translate-y-1 transition-all text-sm"
                   >
-                      BACK
+                      TILBAKE
                   </button>
               </div>
           )}
 
           {gameState === 'GAMEOVER' && (
               <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-8">
-                  <h1 className="text-4xl text-red-500 font-bold">TIME UP!</h1>
-                  <p className="text-white">FINAL SCORE: {score}</p>
+                  <h1 className="text-4xl text-red-500 font-bold">TIDA ER UTE!</h1>
+                  <p className="text-white">SLUTTPOENG: {score}</p>
                   <button 
                     onClick={startGame}
                     className="px-8 py-4 bg-white text-black font-bold hover:bg-zinc-200 transition-all"
                   >
-                      TRY AGAIN
+                      PRØV IGJEN
                   </button>
               </div>
           )}
