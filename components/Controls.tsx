@@ -87,10 +87,55 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
       onAction();
   }
 
-  // Ensure inputs clear if component unmounts or weird edge cases
+  // Keyboard controls
   useEffect(() => {
-      return () => clearInput();
-  }, []);
+      const handleKeyDown = (e: KeyboardEvent) => {
+          const key = e.key.toLowerCase();
+          
+          // Movement controls - WASD
+          if (key === 'w') onInputStateChange('UP', true);
+          if (key === 'a') onInputStateChange('LEFT', true);
+          if (key === 's') onInputStateChange('DOWN', true);
+          if (key === 'd') onInputStateChange('RIGHT', true);
+          
+          // Movement controls - Arrow keys
+          if (e.key === 'ArrowUp') onInputStateChange('UP', true);
+          if (e.key === 'ArrowLeft') onInputStateChange('LEFT', true);
+          if (e.key === 'ArrowDown') onInputStateChange('DOWN', true);
+          if (e.key === 'ArrowRight') onInputStateChange('RIGHT', true);
+          
+          // Action controls - Space and F
+          if (key === ' ' || key === 'f') {
+              e.preventDefault();
+              onAction();
+          }
+      };
+      
+      const handleKeyUp = (e: KeyboardEvent) => {
+          const key = e.key.toLowerCase();
+          
+          // Movement controls - WASD
+          if (key === 'w') onInputStateChange('UP', false);
+          if (key === 'a') onInputStateChange('LEFT', false);
+          if (key === 's') onInputStateChange('DOWN', false);
+          if (key === 'd') onInputStateChange('RIGHT', false);
+          
+          // Movement controls - Arrow keys
+          if (e.key === 'ArrowUp') onInputStateChange('UP', false);
+          if (e.key === 'ArrowLeft') onInputStateChange('LEFT', false);
+          if (e.key === 'ArrowDown') onInputStateChange('DOWN', false);
+          if (e.key === 'ArrowRight') onInputStateChange('RIGHT', false);
+      };
+      
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
+      
+      return () => {
+          clearInput();
+          window.removeEventListener('keydown', handleKeyDown);
+          window.removeEventListener('keyup', handleKeyUp);
+      };
+  }, [onInputStateChange, onAction]);
 
   // Visual helper
   const isPressed = (dir: string) => activeDir === dir;
