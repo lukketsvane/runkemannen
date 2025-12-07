@@ -72,12 +72,7 @@ const App: React.FC = () => {
               />
           )}
 
-          {/* UI Layer */}
-          <div className="absolute top-0 left-0 w-full p-4 pointer-events-none z-10 flex justify-between">
-              <div className="text-yellow-400 font-bold drop-shadow-md border-2 border-black bg-zinc-900 px-2 py-1">
-                  POENG: {score.toString().padStart(5, '0')}
-              </div>
-          </div>
+          {/* UI Layer - Score removed per requirements */}
 
           {/* Menus */}
           {gameState === 'START' && (
@@ -109,8 +104,8 @@ const App: React.FC = () => {
                   <h1 className="text-2xl md:text-3xl text-green-500 font-bold">
                       VELG NIVÅ
                   </h1>
-                  <div className="grid grid-cols-3 gap-3 max-w-xs w-full">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => (
+                  <div className="grid grid-cols-5 gap-3 max-w-md w-full">
+                      {Array.from({length: 25}, (_, i) => i + 1).map(level => (
                           <button 
                               key={level}
                               onClick={() => {
@@ -120,10 +115,14 @@ const App: React.FC = () => {
                               className={`px-4 py-3 ${
                                   selectedLevel === level 
                                       ? 'bg-blue-600 hover:bg-blue-500' 
+                                      : level === 25 
+                                      ? 'bg-purple-600 hover:bg-purple-500'
                                       : 'bg-green-600 hover:bg-green-500'
                               } text-white font-bold border-b-4 ${
                                   selectedLevel === level 
                                       ? 'border-blue-800' 
+                                      : level === 25
+                                      ? 'border-purple-800'
                                       : 'border-green-800'
                               } active:border-b-0 active:translate-y-1 transition-all text-sm`}
                           >
@@ -143,7 +142,6 @@ const App: React.FC = () => {
           {gameState === 'GAMEOVER' && (
               <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-8">
                   <h1 className="text-4xl text-red-500 font-bold">TIDA ER UTE!</h1>
-                  <p className="text-white">SLUTTPOENG: {score}</p>
                   <button 
                     onClick={restartLevel}
                     className="px-8 py-4 bg-white text-black font-bold hover:bg-zinc-200 transition-all"

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType } from '../types';
+import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType, Item, ItemType } from '../types';
 import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
@@ -34,31 +34,87 @@ const hasLineOfSight = (p1: Point, p2: Point, walls: Point[], maxDist: number = 
     return true;
 };
 
+// Check if target is in enemy's vision cone (110 degrees)
+const isInVisionCone = (enemy: Npc, target: Point, fov: number = 110): boolean => {
+    // Calculate angle from enemy to target
+    const dx = target.x - enemy.x;
+    const dy = target.y - enemy.y;
+    const angleToTarget = Math.atan2(dy, dx) * (180 / Math.PI);
+    
+    // Get enemy's facing direction angle
+    let facingAngle = 0;
+    switch(enemy.direction) {
+        case Direction.RIGHT: facingAngle = 0; break;
+        case Direction.DOWN: facingAngle = 90; break;
+        case Direction.LEFT: facingAngle = 180; break;
+        case Direction.UP: facingAngle = -90; break;
+    }
+    
+    // Calculate angle difference
+    let angleDiff = angleToTarget - facingAngle;
+    // Normalize to -180 to 180
+    while (angleDiff > 180) angleDiff -= 360;
+    while (angleDiff < -180) angleDiff += 360;
+    
+    // Check if within FOV
+    return Math.abs(angleDiff) <= fov / 2;
+};
+
 // --- Level Configuration ---
 interface LevelConfig {
     girls: number;
     eyes: number;
     obstacleDensity: number; // 0 to 1
     timeLimit: number; // Seconds
+    items?: number; // Number of items to spawn
+    isBossLevel?: boolean; // Special boss mode
 }
 
 const getLevelConfig = (level: number): LevelConfig => {
+    // Boss level - special mode
+    if (level === 25) {
+        return { 
+            girls: 3, 
+            eyes: 0, 
+            obstacleDensity: 0.25, 
+            timeLimit: 180,
+            items: 2,
+            isBossLevel: true
+        };
+    }
+    
+    // Regular levels 1-24
     switch(level) {
-        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 90 }; // Tutorial level - easy, more time
-        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 90 }; // Learn multiple targets
-        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.12, timeLimit: 100 }; // Introduce enemies
-        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.15, timeLimit: 110 }; // More targets
-        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.18, timeLimit: 120 }; // More enemies
-        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.20, timeLimit: 130 }; // Balanced challenge
-        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.23, timeLimit: 135 }; // Getting harder
-        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.26, timeLimit: 140 }; // Many targets
-        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.29, timeLimit: 145 }; // Intense
-        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.32, timeLimit: 150 }; // Boss level
+        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 90, items: 1 };
+        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 90, items: 1 };
+        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.12, timeLimit: 100, items: 1 };
+        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.15, timeLimit: 110, items: 2 };
+        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.18, timeLimit: 120, items: 2 };
+        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.20, timeLimit: 130, items: 2 };
+        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.23, timeLimit: 135, items: 2 };
+        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.26, timeLimit: 140, items: 3 };
+        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.29, timeLimit: 145, items: 3 };
+        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.32, timeLimit: 150, items: 3 };
+        case 11: return { girls: 6, eyes: 5, obstacleDensity: 0.33, timeLimit: 150, items: 3 };
+        case 12: return { girls: 7, eyes: 6, obstacleDensity: 0.34, timeLimit: 155, items: 3 };
+        case 13: return { girls: 7, eyes: 6, obstacleDensity: 0.35, timeLimit: 155, items: 4 };
+        case 14: return { girls: 8, eyes: 7, obstacleDensity: 0.36, timeLimit: 160, items: 4 };
+        case 15: return { girls: 8, eyes: 7, obstacleDensity: 0.37, timeLimit: 160, items: 4 };
+        case 16: return { girls: 9, eyes: 8, obstacleDensity: 0.38, timeLimit: 165, items: 4 };
+        case 17: return { girls: 9, eyes: 8, obstacleDensity: 0.39, timeLimit: 165, items: 4 };
+        case 18: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5 };
+        case 19: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5 };
+        case 20: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5 };
+        case 21: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5 };
+        case 22: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5 };
+        case 23: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5 };
+        case 24: return { girls: 12, eyes: 12, obstacleDensity: 0.40, timeLimit: 180, items: 6 };
         default: return { 
             girls: Math.min(12, Math.floor(level/2) + 3), 
-            eyes: Math.min(10, Math.floor(level/2.5) + 2), 
-            obstacleDensity: Math.min(0.40, 0.32 + (level - 10) * 0.015), 
-            timeLimit: Math.min(180, 150 + (level - 10) * 4) 
+            eyes: Math.min(12, Math.floor(level/2.5) + 2), 
+            obstacleDensity: 0.40, 
+            timeLimit: 180,
+            items: 3
         };
     }
 };
@@ -96,6 +152,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
       mana: 0, maxMana: 100, confusedTimer: 0
   });
   const npcsRef = useRef<Npc[]>([]);
+  const itemsRef = useRef<Item[]>([]);
   const particlesRef = useRef<Particle[]>([]);
   const wallsRef = useRef<Point[]>([]);
   const activeLinksRef = useRef<Point[]>([]); 
@@ -103,6 +160,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const levelRef = useRef(1);
   const timeLeftRef = useRef(0); // In Frames
   const spritesRef = useRef<Record<string, HTMLImageElement>>({});
+  const speedBoostTimerRef = useRef(0); // Frames remaining for speed boost
+  const stealthTimerRef = useRef(0); // Frames remaining for stealth
+  const [collectedMessage, setCollectedMessage] = useState<string | null>(null);
 
   const spawnSplat = (x: number, y: number, color: string = '#ffffff') => {
     for (let i = 0; i < 20; i++) {
@@ -126,6 +186,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     
     timeLeftRef.current = config.timeLimit * FPS;
     wallsRef.current = [];
+    itemsRef.current = [];
     
     // Outer Walls
     for (let x = 0; x < mapWidth; x++) {
@@ -170,18 +231,76 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
     npcsRef.current = [];
     
-    // Spawn Girls
-    for (let i = 0; i < config.girls; i++) {
-        spawnNpc(i, NpcType.GIRL_BLONDE);
+    // Boss level - spawn boss enemy
+    if (config.isBossLevel) {
+        spawnNpc(0, NpcType.BOSS_EYE, true);
+    } else {
+        // Spawn Girls
+        for (let i = 0; i < config.girls; i++) {
+            spawnNpc(i, NpcType.GIRL_BLONDE);
+        }
+        
+        // Spawn Eye Enemies
+        for (let i = 0; i < config.eyes; i++) {
+            spawnNpc(config.girls + i, NpcType.ENEMY_EYE);
+        }
     }
     
-    // Spawn Eye Enemies
-    for (let i = 0; i < config.eyes; i++) {
-        spawnNpc(config.girls + i, NpcType.ENEMY_EYE);
+    // Spawn Items
+    if (config.items && config.items > 0) {
+        const itemSpots = availableSpots.slice(obstacleCount, obstacleCount + config.items * 3);
+        for (let i = 0; i < config.items; i++) {
+            if (i < itemSpots.length) {
+                const spot = itemSpots[i * 3];
+                let itemType = Math.floor(Math.random() * 5) as ItemType;
+                
+                // More lore notes in later levels
+                if (level > 10 && Math.random() > 0.6) {
+                    itemType = ItemType.LORE_NOTE;
+                }
+                
+                itemsRef.current.push({
+                    id: i,
+                    x: spot.x + TILE_SIZE / 4,
+                    y: spot.y + TILE_SIZE / 4,
+                    width: 12,
+                    height: 12,
+                    type: itemType,
+                    collected: false,
+                    message: itemType === ItemType.LORE_NOTE ? getLoreMessage(level) : undefined
+                });
+            }
+        }
     }
   };
 
-  const spawnNpc = (id: number, forcedType?: NpcType) => {
+  const getLoreMessage = (level: number): string => {
+    const messages = [
+      "Det snakkes om ein mystisk skikkelse...",
+      "Auge ser alt, men ikkje bak seg.",
+      "Dei kallar han Runkemannen.",
+      "Ein gong var han normal, no er han legende.",
+      "Jentene veit ikkje kva dei vekker.",
+      "Augo følgjer deg, pass deg.",
+      "I skyggane ligg sanninga.",
+      "Kven er du eigentleg?",
+      "Nivå 25... der ventar noko stort.",
+      "Augo har ein svakheit - dei ser berre framover.",
+      "Makt kjem med ansvar... eller?",
+      "Ein ekte mester sniker utan å bli sett.",
+      "Tida er di største fiende.",
+      "Kanskje du er helten? Kanskje skurken?",
+      "Det finst ein større plan.",
+      "Augo vokterer hemmelege makter.",
+      "Runkemannen er meir enn eit rykte.",
+      "Nærmar du deg slutten, nærmar sanninga seg.",
+      "Kva skjer når alle nivå er fullført?",
+      "Dette er berre byrjinga."
+    ];
+    return messages[Math.min(level - 1, messages.length - 1)];
+  };
+
+  const spawnNpc = (id: number, forcedType?: NpcType, isBoss: boolean = false) => {
     let nx, ny;
     let safe = false;
     let attempts = 0;
@@ -211,16 +330,17 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         id: id,
         x: nx,
         y: ny,
-        width: 16,
-        height: 16,
-        speed: NPC_WALK_SPEED,
+        width: isBoss ? 24 : 16,
+        height: isBoss ? 24 : 16,
+        speed: isBoss ? NPC_RUN_SPEED * 0.7 : NPC_WALK_SPEED,
         direction: Math.floor(Math.random() * 4),
         state: EntityState.IDLE,
         frameTimer: 0,
         currentFrame: 0,
         alerted: false,
         reactionTimer: 0,
-        type: type 
+        type: type,
+        isBoss: isBoss
     });
   }
 
@@ -238,6 +358,21 @@ export const GameEngine: React.FC<GameEngineProps> = ({
 
     // 0. Status Effects
     if (player.confusedTimer > 0) player.confusedTimer--;
+    
+    // Handle active item timers
+    if (speedBoostTimerRef.current > 0) {
+        speedBoostTimerRef.current--;
+        if (speedBoostTimerRef.current === 0) {
+            player.speed = PLAYER_SPEED;
+        }
+    }
+    
+    if (stealthTimerRef.current > 0) {
+        stealthTimerRef.current--;
+        if (stealthTimerRef.current === 0 && player.confusedTimer < 0) {
+            player.confusedTimer = 0;
+        }
+    }
 
     // 1. Player Movement
     let dx = 0;
@@ -299,16 +434,24 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     for (let i = npcsRef.current.length - 1; i >= 0; i--) {
         const npc = npcsRef.current[i];
         
-        const isEnemy = npc.type === NpcType.ENEMY_EYE;
-        const visionRange = isEnemy ? 220 : 180; 
+        const isEnemy = npc.type === NpcType.ENEMY_EYE || npc.type === NpcType.BOSS_EYE;
+        const isBoss = npc.isBoss || false;
+        const visionRange = isBoss ? 280 : (isEnemy ? 220 : 180);
         
         const dist = Math.sqrt(Math.pow(npc.x - player.x, 2) + Math.pow(npc.y - player.y, 2));
-        const canSeePlayer = hasLineOfSight(
+        
+        // Check line of sight first
+        let canSeePlayer = hasLineOfSight(
             {x: player.x + 8, y: player.y + 8}, 
             {x: npc.x + 8, y: npc.y + 8}, 
             wallsRef.current,
             visionRange
         );
+        
+        // For enemies, also check 110-degree vision cone
+        if (isEnemy && canSeePlayer) {
+            canSeePlayer = isInVisionCone(npc, {x: player.x + 8, y: player.y + 8}, isBoss ? 360 : 110);
+        }
         
         // --- CHARGING MECHANIC (Only Girls) ---
         // Player CANNOT charge if distracted (confusedTimer > 0)
@@ -362,8 +505,8 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         let ndy = 0;
 
         if (npc.state === EntityState.RUN_AWAY || npc.state === EntityState.CHASE) {
-            npc.speed = NPC_RUN_SPEED;
-            if (isEnemy) npc.speed = NPC_RUN_SPEED * 0.9;
+            npc.speed = isBoss ? NPC_RUN_SPEED * 1.2 : NPC_RUN_SPEED;
+            if (isEnemy && !isBoss) npc.speed = NPC_RUN_SPEED * 0.9;
             
             const angle = Math.atan2(npc.y - player.y, npc.x - player.x);
             
@@ -382,7 +525,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             }
 
         } else if (npc.state === EntityState.WALK) {
-            npc.speed = NPC_WALK_SPEED;
+            npc.speed = isBoss ? NPC_RUN_SPEED * 0.5 : NPC_WALK_SPEED;
             // SMARTER AI: Don't change direction as often (lower probability)
             // This makes them patrol lines rather than jitter
             if (Math.random() < 0.01) npc.direction = Math.floor(Math.random() * 4);
@@ -436,9 +579,11 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         // --- INTERACTIONS ---
         if (isEnemy) {
             // Invincibility Logic: Touching enemy doesn't kill, it distracts
-            if (dist < 12) { 
+            // But not if player has stealth cloak (negative confusedTimer)
+            const touchDist = isBoss ? 20 : 12;
+            if (dist < touchDist && player.confusedTimer >= 0) { 
                 if (player.confusedTimer <= 0) {
-                    player.confusedTimer = 180; // 3 Seconds of distraction
+                    player.confusedTimer = isBoss ? 240 : 180; // Boss stuns longer
                     player.mana = 0; // Penalty: Lose all mana
                     spawnSplat(player.x, player.y, '#ff00ff'); 
                 }
@@ -465,6 +610,43 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         p.vx *= 0.9; 
         p.vy *= 0.9;
         if (p.life <= 0) particlesRef.current.splice(i, 1);
+    }
+
+    // Item Collection
+    for (let i = itemsRef.current.length - 1; i >= 0; i--) {
+        const item = itemsRef.current[i];
+        if (item.collected) continue;
+        
+        const dist = Math.sqrt(Math.pow(item.x - player.x, 2) + Math.pow(item.y - player.y, 2));
+        if (dist < 20) {
+            item.collected = true;
+            spawnSplat(item.x, item.y, '#ffff00');
+            
+            // Apply item effects
+            switch(item.type) {
+                case ItemType.HEALTH_BOOST:
+                    player.confusedTimer = Math.max(0, player.confusedTimer - 60);
+                    break;
+                case ItemType.SPEED_BOOST:
+                    player.speed = PLAYER_SPEED * 1.3;
+                    speedBoostTimerRef.current = 5 * FPS; // 5 seconds
+                    break;
+                case ItemType.STEALTH_CLOAK:
+                    // Temporarily make player invisible to enemies
+                    player.confusedTimer = -120; // Negative = invincible
+                    stealthTimerRef.current = 3 * FPS; // 3 seconds
+                    break;
+                case ItemType.TIME_FREEZE:
+                    timeLeftRef.current += 30 * FPS; // Add 30 seconds
+                    break;
+                case ItemType.LORE_NOTE:
+                    if (item.message) {
+                        setCollectedMessage(item.message);
+                        setTimeout(() => setCollectedMessage(null), 4000);
+                    }
+                    break;
+            }
+        }
     }
 
     if (actionTrigger.current) {
@@ -513,6 +695,50 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         ctx.restore();
     }
 
+    // Draw Items
+    for (const item of itemsRef.current) {
+        if (item.collected) continue;
+        
+        // Pulsing effect
+        const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
+        ctx.globalAlpha = pulse;
+        
+        // Different colors for different item types
+        let color = '#ffff00';
+        let symbol = '?';
+        switch(item.type) {
+            case ItemType.HEALTH_BOOST:
+                color = '#ff0000';
+                symbol = '+';
+                break;
+            case ItemType.SPEED_BOOST:
+                color = '#00ffff';
+                symbol = '»';
+                break;
+            case ItemType.STEALTH_CLOAK:
+                color = '#8800ff';
+                symbol = '◊';
+                break;
+            case ItemType.TIME_FREEZE:
+                color = '#00ff00';
+                symbol = '⏱';
+                break;
+            case ItemType.LORE_NOTE:
+                color = '#ffaa00';
+                symbol = '📜';
+                break;
+        }
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(item.x, item.y, item.width, item.height);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(symbol, item.x + item.width / 2, item.y + item.height - 2);
+        
+        ctx.globalAlpha = 1.0;
+    }
+
     const entities = [playerRef.current, ...npcsRef.current].sort((a, b) => a.y - b.y);
 
     entities.forEach(ent => {
@@ -522,7 +748,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         
         if ('alerted' in ent) {
             const npc = ent as Npc;
-            if (npc.type === NpcType.ENEMY_EYE) {
+            if (npc.type === NpcType.ENEMY_EYE || npc.type === NpcType.BOSS_EYE) {
                 sprite = spritesRef.current['enemy_eye'];
                 isEnemy = true;
             } else if (npc.type === NpcType.GIRL_REDHEAD) {
@@ -571,7 +797,12 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                 }
             } else if (isEnemy) {
                  const npc = ent as Npc;
-                 if (npc.alerted) {
+                 if (npc.isBoss) {
+                    // Boss indicator - crown
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.font = 'bold 16px monospace';
+                    ctx.fillText('♔', npc.x + 4, npc.y - 6);
+                 } else if (npc.alerted) {
                     ctx.fillStyle = '#ff00aa';
                     ctx.font = 'bold 12px monospace';
                     ctx.fillText('!!', npc.x + 2, npc.y - 6);
@@ -637,7 +868,13 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     ctx.strokeRect(bx, by, barW, barH);
     
     // Only show text if NOT damaged
-    if (player.confusedTimer <= 0) {
+    if (player.confusedTimer < 0) {
+        // Stealth mode indicator
+        ctx.fillStyle = '#8800ff';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("STEALTH", VIRTUAL_WIDTH/2, by - 4);
+    } else if (player.confusedTimer <= 0) {
         ctx.fillStyle = '#fff';
         ctx.font = '8px monospace';
         ctx.textAlign = 'center';
@@ -649,13 +886,40 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     ctx.fillStyle = '#fff';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`NIVÅ ${levelRef.current}`, 10, VIRTUAL_HEIGHT - 10);
+    const levelText = levelRef.current === 25 ? 'NIVÅ 25: BOSS' : `NIVÅ ${levelRef.current}`;
+    ctx.fillText(levelText, 10, VIRTUAL_HEIGHT - 10);
 
     // Timer
     const secondsLeft = Math.ceil(timeLeftRef.current / FPS);
     ctx.textAlign = 'right';
     ctx.fillStyle = secondsLeft < 10 ? '#ff0000' : '#fff';
     ctx.fillText(`TID: ${secondsLeft}`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
+    
+    // Lore message display
+    if (collectedMessage) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(10, VIRTUAL_HEIGHT / 2 - 30, VIRTUAL_WIDTH - 20, 60);
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'center';
+        
+        // Word wrap the message
+        const words = collectedMessage.split(' ');
+        let line = '';
+        let y = VIRTUAL_HEIGHT / 2 - 10;
+        for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > VIRTUAL_WIDTH - 40 && i > 0) {
+                ctx.fillText(line, VIRTUAL_WIDTH / 2, y);
+                line = words[i] + ' ';
+                y += 12;
+            } else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, VIRTUAL_WIDTH / 2, y);
+    }
   };
 
   const gameLoop = useCallback(() => {
