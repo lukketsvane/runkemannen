@@ -593,10 +593,10 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             if (actionTrigger.current && player.mana > 0 && dist < RUNK_DISTANCE) {
                 // Deplete mana by a fixed amount per press
                 player.mana = Math.max(0, player.mana - RUNK_DEPLETION_RATE);
-                player.isSpamming = true;
                 
                 // SUCCESS when mana reaches 0
                 if (player.mana === 0) {
+                    player.isSpamming = true;
                     scoreRef.current += 500;
                     onScoreUpdate(scoreRef.current);
                     spawnSplat(npc.x, npc.y, '#ffffff');

@@ -73,6 +73,8 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+      // Reset keyboard mode when touch is used
+      setKeyboardUsed(false);
       handleMove(e.touches[0].clientX, e.touches[0].clientY);
   };
 
@@ -102,6 +104,8 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   const handleAction = (e: React.TouchEvent | React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      // Reset keyboard mode when touch is used
+      setKeyboardUsed(false);
       resetHideTimer(); // Reset timer on action
       onAction();
   }
