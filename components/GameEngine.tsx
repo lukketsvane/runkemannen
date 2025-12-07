@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType, Item, ItemType } from '../types';
-import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE } from '../constants';
+import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType, Item, ItemType, Bush, Upgrade, UpgradeRarity, UpgradeType } from '../types';
+import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE, BUSH_RADIUS } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
 // --- Utils ---
@@ -67,6 +67,7 @@ interface LevelConfig {
     obstacleDensity: number; // 0 to 1
     timeLimit: number; // Seconds
     items?: number; // Number of items to spawn
+    bushes?: number; // Number of bushes to spawn
     isBossLevel?: boolean; // Special boss mode
 }
 
@@ -79,42 +80,44 @@ const getLevelConfig = (level: number): LevelConfig => {
             obstacleDensity: 0.25, 
             timeLimit: 180,
             items: 2,
+            bushes: 4,
             isBossLevel: true
         };
     }
     
     // Regular levels 1-24
     switch(level) {
-        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 90, items: 1 };
-        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 90, items: 1 };
-        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.12, timeLimit: 100, items: 1 };
-        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.15, timeLimit: 110, items: 2 };
-        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.18, timeLimit: 120, items: 2 };
-        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.20, timeLimit: 130, items: 2 };
-        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.23, timeLimit: 135, items: 2 };
-        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.26, timeLimit: 140, items: 3 };
-        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.29, timeLimit: 145, items: 3 };
-        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.32, timeLimit: 150, items: 3 };
-        case 11: return { girls: 6, eyes: 5, obstacleDensity: 0.33, timeLimit: 150, items: 3 };
-        case 12: return { girls: 7, eyes: 6, obstacleDensity: 0.34, timeLimit: 155, items: 3 };
-        case 13: return { girls: 7, eyes: 6, obstacleDensity: 0.35, timeLimit: 155, items: 4 };
-        case 14: return { girls: 8, eyes: 7, obstacleDensity: 0.36, timeLimit: 160, items: 4 };
-        case 15: return { girls: 8, eyes: 7, obstacleDensity: 0.37, timeLimit: 160, items: 4 };
-        case 16: return { girls: 9, eyes: 8, obstacleDensity: 0.38, timeLimit: 165, items: 4 };
-        case 17: return { girls: 9, eyes: 8, obstacleDensity: 0.39, timeLimit: 165, items: 4 };
-        case 18: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5 };
-        case 19: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5 };
-        case 20: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5 };
-        case 21: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5 };
-        case 22: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5 };
-        case 23: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5 };
-        case 24: return { girls: 12, eyes: 12, obstacleDensity: 0.40, timeLimit: 180, items: 6 };
+        case 1: return { girls: 1, eyes: 0, obstacleDensity: 0.03, timeLimit: 90, items: 1, bushes: 2 };
+        case 2: return { girls: 2, eyes: 0, obstacleDensity: 0.08, timeLimit: 90, items: 1, bushes: 2 };
+        case 3: return { girls: 2, eyes: 1, obstacleDensity: 0.12, timeLimit: 100, items: 1, bushes: 3 };
+        case 4: return { girls: 3, eyes: 1, obstacleDensity: 0.15, timeLimit: 110, items: 2, bushes: 3 };
+        case 5: return { girls: 3, eyes: 2, obstacleDensity: 0.18, timeLimit: 120, items: 2, bushes: 4 };
+        case 6: return { girls: 4, eyes: 2, obstacleDensity: 0.20, timeLimit: 130, items: 2, bushes: 4 };
+        case 7: return { girls: 4, eyes: 3, obstacleDensity: 0.23, timeLimit: 135, items: 2, bushes: 5 };
+        case 8: return { girls: 5, eyes: 3, obstacleDensity: 0.26, timeLimit: 140, items: 3, bushes: 5 };
+        case 9: return { girls: 5, eyes: 4, obstacleDensity: 0.29, timeLimit: 145, items: 3, bushes: 6 };
+        case 10: return { girls: 6, eyes: 5, obstacleDensity: 0.32, timeLimit: 150, items: 3, bushes: 6 };
+        case 11: return { girls: 6, eyes: 5, obstacleDensity: 0.33, timeLimit: 150, items: 3, bushes: 6 };
+        case 12: return { girls: 7, eyes: 6, obstacleDensity: 0.34, timeLimit: 155, items: 3, bushes: 7 };
+        case 13: return { girls: 7, eyes: 6, obstacleDensity: 0.35, timeLimit: 155, items: 4, bushes: 7 };
+        case 14: return { girls: 8, eyes: 7, obstacleDensity: 0.36, timeLimit: 160, items: 4, bushes: 8 };
+        case 15: return { girls: 8, eyes: 7, obstacleDensity: 0.37, timeLimit: 160, items: 4, bushes: 8 };
+        case 16: return { girls: 9, eyes: 8, obstacleDensity: 0.38, timeLimit: 165, items: 4, bushes: 8 };
+        case 17: return { girls: 9, eyes: 8, obstacleDensity: 0.39, timeLimit: 165, items: 4, bushes: 9 };
+        case 18: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5, bushes: 9 };
+        case 19: return { girls: 10, eyes: 9, obstacleDensity: 0.40, timeLimit: 170, items: 5, bushes: 10 };
+        case 20: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5, bushes: 10 };
+        case 21: return { girls: 11, eyes: 10, obstacleDensity: 0.40, timeLimit: 175, items: 5, bushes: 10 };
+        case 22: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5, bushes: 11 };
+        case 23: return { girls: 12, eyes: 11, obstacleDensity: 0.40, timeLimit: 180, items: 5, bushes: 11 };
+        case 24: return { girls: 12, eyes: 12, obstacleDensity: 0.40, timeLimit: 180, items: 6, bushes: 12 };
         default: return { 
-            girls: Math.min(12, Math.floor(level/2) + 3), 
-            eyes: Math.min(12, Math.floor(level/2.5) + 2), 
+            girls: Math.min(15, Math.floor(level/2) + 3), 
+            eyes: Math.min(15, Math.floor(level/2.5) + 2), 
             obstacleDensity: 0.40, 
             timeLimit: 180,
-            items: 3
+            items: 3,
+            bushes: Math.min(12, 8 + Math.floor(level / 10))
         };
     }
 };
@@ -149,12 +152,13 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const playerRef = useRef<Player>({
       id: 0, x: 100, y: 100, width: 16, height: 16, speed: PLAYER_SPEED,
       direction: Direction.DOWN, state: EntityState.IDLE, frameTimer: 0, currentFrame: 0, isSpamming: false,
-      mana: 0, maxMana: 100, confusedTimer: 0
+      mana: 0, maxMana: 100, confusedTimer: 0, inBush: false, upgrades: []
   });
   const npcsRef = useRef<Npc[]>([]);
   const itemsRef = useRef<Item[]>([]);
   const particlesRef = useRef<Particle[]>([]);
   const wallsRef = useRef<Point[]>([]);
+  const bushesRef = useRef<Bush[]>([]);
   const activeLinksRef = useRef<Point[]>([]); 
   const scoreRef = useRef(0);
   const levelRef = useRef(1);
@@ -163,6 +167,8 @@ export const GameEngine: React.FC<GameEngineProps> = ({
   const speedBoostTimerRef = useRef(0); // Frames remaining for speed boost
   const stealthTimerRef = useRef(0); // Frames remaining for stealth
   const [collectedMessage, setCollectedMessage] = useState<string | null>(null);
+  const [showUpgradeMenu, setShowUpgradeMenu] = useState(false);
+  const [upgradeOptions, setUpgradeOptions] = useState<Upgrade[]>([]);
 
   const spawnSplat = (x: number, y: number, color: string = '#ffffff') => {
     for (let i = 0; i < 20; i++) {
@@ -177,6 +183,109 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             color: color
         });
     }
+  };
+
+  const getAllUpgrades = (): Upgrade[] => {
+    return [
+      {
+        type: UpgradeType.LYNRASK_NEVER,
+        rarity: UpgradeRarity.RARE,
+        name: 'Lynrask Never',
+        description: 'Gjer at det går mykje fortare å bli ferdig',
+        icon: '⚡'
+      },
+      {
+        type: UpgradeType.BUSK_WOOKIE,
+        rarity: UpgradeRarity.EPIC,
+        name: 'Busk-Wookie',
+        description: 'Gjer det vanskelegare å bli oppdaga',
+        icon: '🌿'
+      },
+      {
+        type: UpgradeType.EKSPLOSIV_AVGANG,
+        rarity: UpgradeRarity.LEGENDARY,
+        name: 'Eksplosiv Avgang',
+        description: 'Ekstrem fart, men høg risiko',
+        icon: '💥'
+      },
+      {
+        type: UpgradeType.SPEED_BOOST,
+        rarity: UpgradeRarity.COMMON,
+        name: 'Raskare Føter',
+        description: 'Gå 20% raskare',
+        icon: '👟'
+      },
+      {
+        type: UpgradeType.HEALTH_REGEN,
+        rarity: UpgradeRarity.COMMON,
+        name: 'Rask Bedring',
+        description: 'Kom deg raskare etter å bli oppdaga',
+        icon: '❤️'
+      },
+      {
+        type: UpgradeType.TIME_EXTENSION,
+        rarity: UpgradeRarity.RARE,
+        name: 'Meir Tid',
+        description: 'Få 30 sekund ekstra tid',
+        icon: '⏰'
+      }
+    ];
+  };
+
+  const generateUpgradeOptions = (): Upgrade[] => {
+    const allUpgrades = getAllUpgrades();
+    const player = playerRef.current;
+    
+    // Filter out already obtained upgrades
+    const availableUpgrades = allUpgrades.filter(u => !player.upgrades.includes(u.type));
+    
+    if (availableUpgrades.length === 0) {
+      // If all upgrades are obtained, allow duplicates
+      return allUpgrades
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+    }
+    
+    // Shuffle and take 3
+    return availableUpgrades
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(3, availableUpgrades.length));
+  };
+
+  const applyUpgrade = (upgrade: Upgrade) => {
+    const player = playerRef.current;
+    
+    // Add upgrade to player's list
+    if (!player.upgrades.includes(upgrade.type)) {
+      player.upgrades.push(upgrade.type);
+    }
+    
+    // Apply immediate effects
+    switch(upgrade.type) {
+      case UpgradeType.LYNRASK_NEVER:
+        // Increases charge rate - handled in update loop
+        break;
+      case UpgradeType.BUSK_WOOKIE:
+        // Makes detection harder - handled in detection logic
+        break;
+      case UpgradeType.EKSPLOSIV_AVGANG:
+        // Extreme speed but higher detection range
+        player.speed = PLAYER_SPEED * 2;
+        break;
+      case UpgradeType.SPEED_BOOST:
+        player.speed = Math.max(player.speed, PLAYER_SPEED * 1.2);
+        break;
+      case UpgradeType.HEALTH_REGEN:
+        // Reduces confusion timer - handled passively
+        break;
+      case UpgradeType.TIME_EXTENSION:
+        timeLeftRef.current += 30 * FPS;
+        break;
+    }
+    
+    // Close menu and continue to next level
+    setShowUpgradeMenu(false);
+    advanceToNextLevel();
   };
 
   const initLevel = (level: number) => {
@@ -272,6 +381,25 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             }
         }
     }
+    
+    // Spawn Bushes
+    bushesRef.current = [];
+    if (config.bushes && config.bushes > 0) {
+        const bushSpots = availableSpots.slice(
+            obstacleCount + (config.items || 0) * 3, 
+            obstacleCount + (config.items || 0) * 3 + config.bushes * 4
+        );
+        for (let i = 0; i < config.bushes; i++) {
+            if (i < bushSpots.length / 4) {
+                const spot = bushSpots[i * 4];
+                bushesRef.current.push({
+                    x: spot.x + TILE_SIZE / 2,
+                    y: spot.y + TILE_SIZE / 2,
+                    radius: BUSH_RADIUS
+                });
+            }
+        }
+    }
   };
 
   const getLoreMessage = (level: number): string => {
@@ -357,7 +485,11 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     }
 
     // 0. Status Effects
-    if (player.confusedTimer > 0) player.confusedTimer--;
+    // Health Regen upgrade - recover from confusion faster
+    const hasHealthRegen = player.upgrades.includes(UpgradeType.HEALTH_REGEN);
+    if (player.confusedTimer > 0) {
+        player.confusedTimer -= hasHealthRegen ? 2 : 1;
+    }
     
     // Handle active item timers
     if (speedBoostTimerRef.current > 0) {
@@ -410,6 +542,19 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     player.x = Math.max(TILE_SIZE, Math.min(player.x, VIRTUAL_WIDTH - TILE_SIZE * 2));
     player.y = Math.max(TILE_SIZE, Math.min(player.y, VIRTUAL_HEIGHT - TILE_SIZE * 2));
 
+    // Check if player is in a bush
+    player.inBush = false;
+    for (const bush of bushesRef.current) {
+        const distToBush = Math.sqrt(
+            Math.pow(player.x + player.width / 2 - bush.x, 2) + 
+            Math.pow(player.y + player.height / 2 - bush.y, 2)
+        );
+        if (distToBush < bush.radius) {
+            player.inBush = true;
+            break;
+        }
+    }
+
     // Animation & Direction
     if (dx !== 0 || dy !== 0) {
         player.state = EntityState.WALK;
@@ -448,6 +593,17 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             visionRange
         );
         
+        // BUSH STEALTH: If player is in bush, enemies can't see them unless they're charging
+        // Check if player is charging by seeing if there are active links
+        const isCharging = chargingSourceCount > 0 || activeLinksRef.current.length > 0;
+        if (isEnemy && player.inBush && !isCharging) {
+            // Apply Busk-Wookie upgrade bonus - even harder to detect
+            const hasBuskWookie = player.upgrades.includes(UpgradeType.BUSK_WOOKIE);
+            if (hasBuskWookie || !isCharging) {
+                canSeePlayer = false; // Can't see player in bush
+            }
+        }
+        
         // For enemies, also check 110-degree vision cone
         if (isEnemy && canSeePlayer) {
             canSeePlayer = isInVisionCone(npc, {x: player.x + 8, y: player.y + 8}, isBoss ? 360 : 110);
@@ -460,14 +616,26 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         const tooCloseToCharge = dist < DETECTION_PROXIMITY_THRESHOLD;
         const girlsNoticed = playerIsMoving && tooCloseToCharge;
         
+        // Apply Lynrask Never upgrade - faster charging
+        const hasLynraskNever = player.upgrades.includes(UpgradeType.LYNRASK_NEVER);
+        const chargeMultiplier = hasLynraskNever ? 2.5 : 1.0;
+        
         if (!isEnemy && !npc.alerted && canSeePlayer && dist < CHARGE_DISTANCE && player.confusedTimer <= 0 && !girlsNoticed) {
-            player.mana = Math.min(player.maxMana, player.mana + CHARGE_RATE);
+            player.mana = Math.min(player.maxMana, player.mana + CHARGE_RATE * chargeMultiplier);
             activeLinksRef.current.push({x: npc.x + 8, y: npc.y + 8});
             chargingSourceCount++;
         }
 
         // --- ALERT LOGIC ---
-        const alertDistance = isEnemy ? visionRange : 40; 
+        // Busk-Wookie upgrade makes detection distance smaller
+        const hasBuskWookie = player.upgrades.includes(UpgradeType.BUSK_WOOKIE);
+        const detectionModifier = hasBuskWookie ? 0.7 : 1.0;
+        
+        // Eksplosiv Avgang increases detection range (high risk)
+        const hasEksplosivAvgang = player.upgrades.includes(UpgradeType.EKSPLOSIV_AVGANG);
+        const riskModifier = hasEksplosivAvgang ? 1.5 : 1.0;
+        
+        const alertDistance = isEnemy ? visionRange * detectionModifier * riskModifier : 40 * detectionModifier; 
         
         if (canSeePlayer && dist < alertDistance) {
             if (!npc.alerted) {
@@ -659,12 +827,19 @@ export const GameEngine: React.FC<GameEngineProps> = ({
          setTimeout(() => playerRef.current.isSpamming = false, 100);
     }
 
-    const targetsRemaining = npcsRef.current.filter(n => n.type !== NpcType.ENEMY_EYE).length;
+    const targetsRemaining = npcsRef.current.filter(n => n.type !== NpcType.ENEMY_EYE && n.type !== NpcType.BOSS_EYE).length;
     if (targetsRemaining === 0) {
-        levelRef.current++;
-        if (onLevelChange) onLevelChange(levelRef.current);
-        initLevel(levelRef.current);
+        // Show upgrade menu before advancing to next level
+        const options = generateUpgradeOptions();
+        setUpgradeOptions(options);
+        setShowUpgradeMenu(true);
     }
+  };
+  
+  const advanceToNextLevel = () => {
+      levelRef.current++;
+      if (onLevelChange) onLevelChange(levelRef.current);
+      initLevel(levelRef.current);
   };
 
   const draw = (ctx: CanvasRenderingContext2D) => {
@@ -681,6 +856,21 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         for (const w of wallsRef.current) {
             ctx.drawImage(tilesImg, 0, 0, 32, 32, w.x, w.y, TILE_SIZE, TILE_SIZE);
         }
+    }
+
+    // Draw Bushes (before entities so entities appear on top)
+    for (const bush of bushesRef.current) {
+        // Draw bush as green circle with darker center
+        ctx.fillStyle = 'rgba(34, 139, 34, 0.6)'; // Forest green with transparency
+        ctx.beginPath();
+        ctx.arc(bush.x, bush.y, bush.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner darker circle for depth
+        ctx.fillStyle = 'rgba(20, 100, 20, 0.4)';
+        ctx.beginPath();
+        ctx.arc(bush.x, bush.y, bush.radius * 0.6, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     const player = playerRef.current;
@@ -782,6 +972,11 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                    ctx.globalAlpha = 0.3; // Very faint
                    ctx.globalCompositeOperation = "lighter"; // Additive blending for "shocked" look
                 }
+            }
+            
+            // Make player semi-transparent when in bush
+            if (isPlayer && (ent as Player).inBush) {
+                ctx.globalAlpha = 0.5;
             }
 
             ctx.drawImage(sprite, 
@@ -932,13 +1127,13 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
 
-    if (!isPaused) {
+    if (!isPaused && !showUpgradeMenu) {
       update();
     }
     draw(ctx);
 
     requestRef.current = requestAnimationFrame(gameLoop);
-  }, [isPaused]);
+  }, [isPaused, showUpgradeMenu]);
 
   useEffect(() => {
     spritesRef.current = loadSprites();
@@ -959,6 +1154,41 @@ export const GameEngine: React.FC<GameEngineProps> = ({
           height={VIRTUAL_HEIGHT}
           className="w-full h-full object-contain bg-black shadow-2xl"
       />
+      
+      {/* Upgrade Menu Overlay */}
+      {showUpgradeMenu && upgradeOptions.length > 0 && (
+        <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-4 z-50">
+          <h2 className="text-2xl text-yellow-400 font-bold mb-2">Velg Oppgradering</h2>
+          <p className="text-xs text-zinc-300 mb-6">Permanent boost for denne runnen</p>
+          
+          <div className="flex gap-3 flex-wrap justify-center max-w-full">
+            {upgradeOptions.map((upgrade, index) => {
+              const rarityColors = {
+                [UpgradeRarity.COMMON]: 'border-zinc-500 bg-zinc-800/80',
+                [UpgradeRarity.RARE]: 'border-blue-500 bg-blue-900/80',
+                [UpgradeRarity.EPIC]: 'border-purple-500 bg-purple-900/80',
+                [UpgradeRarity.LEGENDARY]: 'border-orange-500 bg-orange-900/80'
+              };
+              
+              const rarityColor = rarityColors[upgrade.rarity];
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => applyUpgrade(upgrade)}
+                  className={`w-full max-w-[280px] p-4 border-2 ${rarityColor} rounded-lg hover:scale-105 transition-transform cursor-pointer`}
+                >
+                  <div className="text-3xl mb-2">{upgrade.icon}</div>
+                  <div className="text-sm font-bold text-white mb-1">{upgrade.name}</div>
+                  <div className="text-xs text-zinc-400 mb-2">{upgrade.rarity}</div>
+                  <div className="text-xs text-zinc-200">{upgrade.description}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
       {/* Clickable level indicator overlay */}
       {onPauseRequest && (
         <div 

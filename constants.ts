@@ -12,6 +12,7 @@ export const CHARGE_DISTANCE = 160; // Max distance to charge mana
 export const CHARGE_RATE = 0.4; // Mana per frame per girl
 export const DETECTION_PROXIMITY_THRESHOLD = 50; // Distance at which girls notice moving player
 export const RUNK_DEPLETION_RATE = 8; // Mana depleted per runk action press
+export const BUSH_RADIUS = 28; // Radius of bushes for stealth
 
 export const SPRITE_SCALE = 1;
 
