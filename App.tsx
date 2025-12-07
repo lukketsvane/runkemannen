@@ -78,23 +78,27 @@ const App: React.FC = () => {
           {gameState === 'START' && (
               <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6">
                   <h1 className="text-4xl md:text-5xl text-green-500 font-bold drop-shadow-[4px_4px_0_rgba(255,255,255,0.2)] leading-tight">
-                      RUNKE<br/>MANNEN
+                      runke<br/>mannen
                   </h1>
                   <div className="space-y-3 text-zinc-300 text-xs leading-relaxed max-w-xs">
-                      <p className="text-yellow-400">OPPDRAG: KLAR FOR AVGANG</p>
+                      <p className="text-yellow-400">oppdrag: klar for avgang</p>
                       
                       <div className="bg-zinc-900 p-4 border border-zinc-700 text-left space-y-2">
-                        <p><span className="text-blue-400">SNIKE</span> seg nær jentene for å lade opp.</p>
-                        <p>Trykk <span className="text-blue-500 font-bold">RUNK</span> når du er fulladet og nær dei.</p>
-                        <p>Unngå <span className="text-purple-400">AUGA</span>! Dei distraherer deg og nullstiller lading.</p>
-                        <p>Slå klokka for å gå vidare.</p>
+                        <p><span className="text-blue-400">snike</span> seg nær jentene for å lade opp.</p>
+                        <p>trykk <span className="text-blue-500 font-bold">runk</span> raskt og gjentatte ganger når du er fulladet og nær dei.</p>
+                        <p>unngå <span className="text-purple-400">auga</span>! dei distraherer deg og nullstiller lading.</p>
+                        <p>slå klokka for å gå vidare.</p>
+                      </div>
+                      
+                      <div className="bg-blue-900/30 p-3 border border-blue-700/50 text-xs text-blue-300">
+                        💡 tips: legg til heimeskjermen for beste oppleving
                       </div>
                   </div>
                   <button 
                     onClick={showLevelSelect}
                     className="px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all w-full max-w-[200px]"
                   >
-                      START OPPDRAG
+                      start oppdrag
                   </button>
               </div>
           )}
@@ -102,7 +106,7 @@ const App: React.FC = () => {
           {gameState === 'LEVEL_SELECT' && (
               <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6 overflow-y-auto">
                   <h1 className="text-2xl md:text-3xl text-green-500 font-bold">
-                      VELG NIVÅ
+                      velg nivå
                   </h1>
                   <div className="grid grid-cols-5 gap-3 max-w-md w-full">
                       {Array.from({length: 25}, (_, i) => i + 1).map(level => (
@@ -134,44 +138,44 @@ const App: React.FC = () => {
                     onClick={() => setGameState('START')}
                     className="px-6 py-3 bg-zinc-600 hover:bg-zinc-500 text-white font-bold border-b-4 border-zinc-800 active:border-b-0 active:translate-y-1 transition-all text-sm"
                   >
-                      TILBAKE
+                      tilbake
                   </button>
               </div>
           )}
 
           {gameState === 'GAMEOVER' && (
               <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-8">
-                  <h1 className="text-4xl text-red-500 font-bold">TIDA ER UTE!</h1>
+                  <h1 className="text-4xl text-red-500 font-bold">tida er ute!</h1>
                   <button 
                     onClick={restartLevel}
                     className="px-8 py-4 bg-white text-black font-bold hover:bg-zinc-200 transition-all"
                   >
-                      PRØV IGJEN
+                      prøv igjen
                   </button>
               </div>
           )}
 
           {gameState === 'PAUSED' && (
               <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6">
-                  <h1 className="text-3xl text-yellow-400 font-bold">PAUSE</h1>
+                  <h1 className="text-3xl text-yellow-400 font-bold">pause</h1>
                   <div className="space-y-3">
                       <button 
                         onClick={togglePause}
                         className="w-full px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all"
                       >
-                          FORTSETT
+                          fortsett
                       </button>
                       <button 
                         onClick={restartLevel}
                         className="w-full px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all"
                       >
-                          START PÅ NYTT
+                          start på nytt
                       </button>
                       <button 
                         onClick={() => setGameState('START')}
                         className="w-full px-8 py-4 bg-zinc-600 hover:bg-zinc-500 text-white font-bold border-b-4 border-zinc-800 active:border-b-0 active:translate-y-1 transition-all"
                       >
-                          HOVEDMENY
+                          hovedmeny
                       </button>
                   </div>
               </div>
