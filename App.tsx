@@ -147,7 +147,7 @@ const App: React.FC = () => {
           {gameState === 'GAMEOVER' && (
               <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-8">
                   <h1 className="text-4xl text-red-500 font-bold">mista lading!</h1>
-                  <p className="text-zinc-300">du mista ereksjon...</p>
+                  <p className="text-zinc-300">tom for energi...</p>
                   <button 
                     onClick={restartLevel}
                     className="px-8 py-4 bg-white text-black font-bold hover:bg-zinc-200 transition-all"

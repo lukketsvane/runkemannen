@@ -778,6 +778,8 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                     onScoreUpdate(scoreRef.current);
                     spawnSplat(npc.x, npc.y, '#ffffff');
                     npcsRef.current.splice(i, 1);
+                    // Refill mana after successful completion
+                    player.mana = player.maxMana;
                 }
                 actionTrigger.current = false; 
             }
@@ -840,8 +842,13 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                     break;
                 case ItemType.SUNGLASSES:
                     // Sunglasses: Reduce detection range for enemies temporarily
-                    stealthTimerRef.current = 8 * FPS; // 8 seconds of reduced detection
-                    player.confusedTimer = -SUNGLASSES_STEALTH_TIME; // Extra stealth time
+                    stealthTimerRef.current = Math.max(stealthTimerRef.current, 8 * FPS); // 8 seconds of reduced detection (extend if already active)
+                    // Only set stealth if not already in stealth mode, otherwise extend duration
+                    if (player.confusedTimer >= 0) {
+                        player.confusedTimer = -SUNGLASSES_STEALTH_TIME;
+                    } else {
+                        player.confusedTimer = Math.min(player.confusedTimer, -SUNGLASSES_STEALTH_TIME); // Extend stealth
+                    }
                     break;
                 case ItemType.LORE_NOTE:
                     if (item.message) {
