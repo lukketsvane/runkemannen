@@ -113,7 +113,7 @@ const getLevelConfig = (level: number): LevelConfig => {
         case 24: return { girls: 12, eyes: 6, obstacleDensity: 0.40, timeLimit: 9999, items: 6, bushes: 12 };
         default: return { 
             girls: Math.min(15, Math.floor(level/2) + 3), 
-            eyes: Math.min(8, Math.floor(level/4) + 1), // Reduced from /2.5+2
+            eyes: Math.min(8, Math.floor(level/4) + 1), // Reduced from /2.5+2 to /4+1 for less enemy focus
             obstacleDensity: 0.40, 
             timeLimit: 9999,
             items: 3,
@@ -843,11 +843,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                 case ItemType.SUNGLASSES:
                     // Sunglasses: Reduce detection range for enemies temporarily
                     stealthTimerRef.current = Math.max(stealthTimerRef.current, 8 * FPS); // 8 seconds of reduced detection (extend if already active)
-                    // Only set stealth if not already in stealth mode, otherwise extend duration
+                    // Stealth is represented by negative confusedTimer values
+                    // More negative = longer stealth duration
                     if (player.confusedTimer >= 0) {
+                        // Not in stealth, activate it
                         player.confusedTimer = -SUNGLASSES_STEALTH_TIME;
                     } else {
-                        player.confusedTimer = Math.min(player.confusedTimer, -SUNGLASSES_STEALTH_TIME); // Extend stealth
+                        // Already in stealth, extend it (more negative = longer)
+                        player.confusedTimer -= SUNGLASSES_STEALTH_TIME;
                     }
                     break;
                 case ItemType.LORE_NOTE:
