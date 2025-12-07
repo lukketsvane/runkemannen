@@ -4,9 +4,10 @@ import { Controls } from './components/Controls';
 import { VIRTUAL_WIDTH, VIRTUAL_HEIGHT } from './constants';
 
 const App: React.FC = () => {
-  const [gameState, setGameState] = useState<'START' | 'LEVEL_SELECT' | 'PLAYING' | 'GAMEOVER'>('START');
+  const [gameState, setGameState] = useState<'START' | 'LEVEL_SELECT' | 'PLAYING' | 'PAUSED' | 'GAMEOVER'>('START');
   const [score, setScore] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [currentLevel, setCurrentLevel] = useState(1);
   
   // Refs for inputs to avoid re-renders in game loop
   const inputsRef = useRef<Record<string, boolean>>({});
@@ -31,6 +32,20 @@ const App: React.FC = () => {
       setGameState('LEVEL_SELECT');
   }
 
+  const togglePause = () => {
+      if (gameState === 'PLAYING') {
+          setGameState('PAUSED');
+      } else if (gameState === 'PAUSED') {
+          setGameState('PLAYING');
+      }
+  }
+
+  const restartLevel = () => {
+      setScore(0);
+      setGameState('PLAYING');
+      inputsRef.current = {};
+  }
+
   return (
     <div className="relative w-full h-screen bg-zinc-950 flex flex-col items-center justify-center overflow-hidden">
       
@@ -43,13 +58,16 @@ const App: React.FC = () => {
           <div className="scanline"></div>
           
           {/* Main Game Canvas */}
-          {gameState === 'PLAYING' && (
+          {(gameState === 'PLAYING' || gameState === 'PAUSED') && (
               <GameEngine 
                 inputs={inputsRef} 
                 actionTrigger={actionRef} 
                 onScoreUpdate={setScore}
                 onGameOver={() => setGameState('GAMEOVER')}
                 onWin={() => {}}
+                onLevelChange={setCurrentLevel}
+                onPauseRequest={togglePause}
+                isPaused={gameState === 'PAUSED'}
                 initialLevel={selectedLevel}
               />
           )}
@@ -127,11 +145,37 @@ const App: React.FC = () => {
                   <h1 className="text-4xl text-red-500 font-bold">TIDA ER UTE!</h1>
                   <p className="text-white">SLUTTPOENG: {score}</p>
                   <button 
-                    onClick={startGame}
+                    onClick={restartLevel}
                     className="px-8 py-4 bg-white text-black font-bold hover:bg-zinc-200 transition-all"
                   >
                       PRØV IGJEN
                   </button>
+              </div>
+          )}
+
+          {gameState === 'PAUSED' && (
+              <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center z-40 p-8 space-y-6">
+                  <h1 className="text-3xl text-yellow-400 font-bold">PAUSE</h1>
+                  <div className="space-y-3">
+                      <button 
+                        onClick={togglePause}
+                        className="w-full px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all"
+                      >
+                          FORTSETT
+                      </button>
+                      <button 
+                        onClick={restartLevel}
+                        className="w-full px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all"
+                      >
+                          START PÅ NYTT
+                      </button>
+                      <button 
+                        onClick={() => setGameState('START')}
+                        className="w-full px-8 py-4 bg-zinc-600 hover:bg-zinc-500 text-white font-bold border-b-4 border-zinc-800 active:border-b-0 active:translate-y-1 transition-all"
+                      >
+                          HOVEDMENY
+                      </button>
+                  </div>
               </div>
           )}
 
