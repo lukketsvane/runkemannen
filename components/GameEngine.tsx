@@ -249,12 +249,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     const availableUpgrades = allUpgrades.filter(u => !player.upgrades.includes(u.type));
     
     if (availableUpgrades.length === 0) {
-      // If all upgrades are obtained, allow duplicates
+      // If all upgrades are obtained, still show options but they won't add new effects
+      // This keeps the game flow consistent - player must choose to proceed
       return shuffleArray(allUpgrades).slice(0, 3);
     }
     
-    // Use Fisher-Yates shuffle and take 3
-    return shuffleArray(availableUpgrades).slice(0, Math.min(3, availableUpgrades.length));
+    // Use Fisher-Yates shuffle and take up to 3
+    const shuffled = shuffleArray(availableUpgrades);
+    return shuffled.slice(0, Math.min(3, shuffled.length));
   };
 
   const applyUpgrade = (upgrade: Upgrade) => {
@@ -396,7 +398,7 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             obstacleCount + (config.items || 0) * 3 + config.bushes * 4
         );
         for (let i = 0; i < config.bushes; i++) {
-            if (i < bushSpots.length / 4) {
+            if (i * 4 < bushSpots.length) {
                 const spot = bushSpots[i * 4];
                 bushesRef.current.push({
                     x: spot.x + TILE_SIZE / 2,
@@ -838,7 +840,9 @@ export const GameEngine: React.FC<GameEngineProps> = ({
          setTimeout(() => playerRef.current.isSpamming = false, 100);
     }
 
-    const targetsRemaining = npcsRef.current.filter(n => n.type !== NpcType.ENEMY_EYE && n.type !== NpcType.BOSS_EYE).length;
+    const targetsRemaining = npcsRef.current.filter(n => 
+        n.type !== NpcType.ENEMY_EYE && n.type !== NpcType.BOSS_EYE
+    ).length;
     if (targetsRemaining === 0) {
         // Show upgrade menu before advancing to next level
         const options = generateUpgradeOptions();
@@ -977,16 +981,15 @@ export const GameEngine: React.FC<GameEngineProps> = ({
             if (ent.direction === Direction.UP) row = 3;
 
             // Flash player RED/Transparent if distracted (Damaged effect)
+            // Make player semi-transparent when in bush
+            // Confused state takes priority over bush transparency
             if (isPlayer && (ent as Player).confusedTimer > 0) {
                 // Flickering visibility
                 if (Math.floor(Date.now() / 50) % 2 === 0) {
                    ctx.globalAlpha = 0.3; // Very faint
                    ctx.globalCompositeOperation = "lighter"; // Additive blending for "shocked" look
                 }
-            }
-            
-            // Make player semi-transparent when in bush
-            if (isPlayer && (ent as Player).inBush) {
+            } else if (isPlayer && (ent as Player).inBush) {
                 ctx.globalAlpha = 0.5;
             }
 
