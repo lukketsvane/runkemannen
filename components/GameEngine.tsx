@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Entity, Npc, Player, Direction, EntityState, Point, Particle, NpcType, Item, ItemType } from '../types';
-import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS } from '../constants';
+import { TILE_SIZE, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, PLAYER_SPEED, NPC_WALK_SPEED, NPC_RUN_SPEED, RUNK_DISTANCE, CHARGE_DISTANCE, CHARGE_RATE, DETECTION_PROXIMITY_THRESHOLD, FPS, RUNK_DEPLETION_RATE } from '../constants';
 import { loadSprites } from '../assets/spriteGenerator';
 
 // --- Utils ---
@@ -589,14 +589,19 @@ export const GameEngine: React.FC<GameEngineProps> = ({
                 }
             }
         } else {
-            if (actionTrigger.current && player.mana >= 100 && dist < RUNK_DISTANCE) {
-                // SUCCESS
-                player.mana = 0;
-                player.isSpamming = true;
-                scoreRef.current += 500;
-                onScoreUpdate(scoreRef.current);
-                spawnSplat(npc.x, npc.y, '#ffffff');
-                npcsRef.current.splice(i, 1);
+            // NEW MECHANIC: Rapid pressing to deplete charge
+            if (actionTrigger.current && player.mana > 0 && dist < RUNK_DISTANCE) {
+                // Deplete mana by a fixed amount per press
+                player.mana = Math.max(0, player.mana - RUNK_DEPLETION_RATE);
+                
+                // SUCCESS when mana reaches 0
+                if (player.mana === 0) {
+                    player.isSpamming = true;
+                    scoreRef.current += 500;
+                    onScoreUpdate(scoreRef.current);
+                    spawnSplat(npc.x, npc.y, '#ffffff');
+                    npcsRef.current.splice(i, 1);
+                }
                 actionTrigger.current = false; 
             }
         }
@@ -873,12 +878,12 @@ export const GameEngine: React.FC<GameEngineProps> = ({
         ctx.fillStyle = '#8800ff';
         ctx.font = '8px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText("STEALTH", VIRTUAL_WIDTH/2, by - 4);
+        ctx.fillText("stealth", VIRTUAL_WIDTH/2, by - 4);
     } else if (player.confusedTimer <= 0) {
         ctx.fillStyle = '#fff';
         ctx.font = '8px monospace';
         ctx.textAlign = 'center';
-        let statusText = fillPct >= 1.0 ? "KLAR!" : "LADER";
+        let statusText = fillPct >= 1.0 ? "klar!" : "lader";
         ctx.fillText(statusText, VIRTUAL_WIDTH/2, by - 4);
     }
 
@@ -886,14 +891,14 @@ export const GameEngine: React.FC<GameEngineProps> = ({
     ctx.fillStyle = '#fff';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
-    const levelText = levelRef.current === 25 ? 'NIVÅ 25: BOSS' : `NIVÅ ${levelRef.current}`;
+    const levelText = levelRef.current === 25 ? 'nivå 25: boss' : `nivå ${levelRef.current}`;
     ctx.fillText(levelText, 10, VIRTUAL_HEIGHT - 10);
 
     // Timer
     const secondsLeft = Math.ceil(timeLeftRef.current / FPS);
     ctx.textAlign = 'right';
     ctx.fillStyle = secondsLeft < 10 ? '#ff0000' : '#fff';
-    ctx.fillText(`TID: ${secondsLeft}`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
+    ctx.fillText(`tid: ${secondsLeft}`, VIRTUAL_WIDTH - 10, VIRTUAL_HEIGHT - 10);
     
     // Lore message display
     if (collectedMessage) {

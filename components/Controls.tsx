@@ -10,6 +10,7 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   const dpadRef = useRef<HTMLDivElement>(null);
   const [activeDir, setActiveDir] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState<boolean>(true);
+  const [keyboardUsed, setKeyboardUsed] = useState<boolean>(false);
   const hideTimeoutRef = useRef<number | null>(null);
 
   // Reset the hide timer and make controls visible
@@ -72,6 +73,8 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+      // Reset keyboard mode when touch is used
+      setKeyboardUsed(false);
       handleMove(e.touches[0].clientX, e.touches[0].clientY);
   };
 
@@ -101,6 +104,8 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   const handleAction = (e: React.TouchEvent | React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      // Reset keyboard mode when touch is used
+      setKeyboardUsed(false);
       resetHideTimer(); // Reset timer on action
       onAction();
   }
@@ -108,7 +113,10 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
   // Keyboard controls
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-          resetHideTimer(); // Reset timer on keyboard input
+          // Mark keyboard as used and hide controls
+          setKeyboardUsed(true);
+          setIsVisible(false);
+          
           const key = e.key.toLowerCase();
           
           // Movement controls - WASD
@@ -149,8 +157,10 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('keyup', handleKeyUp);
       
-      // Start the initial hide timer
-      resetHideTimer();
+      // Start the initial hide timer only if keyboard hasn't been used
+      if (!keyboardUsed) {
+          resetHideTimer();
+      }
       
       return () => {
           clearInput();
@@ -160,18 +170,18 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
           window.removeEventListener('keydown', handleKeyDown);
           window.removeEventListener('keyup', handleKeyUp);
       };
-  }, [onInputStateChange, onAction]);
+  }, [onInputStateChange, onAction, keyboardUsed]);
 
   // Visual helper
   const isPressed = (dir: string) => activeDir === dir;
 
   return (
-    <div className={`absolute bottom-6 left-0 right-0 px-6 flex justify-between items-end select-none z-30 pointer-events-none transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`absolute bottom-4 left-0 right-0 px-4 flex justify-between items-end select-none z-30 pointer-events-none transition-opacity duration-500 ${isVisible && !keyboardUsed ? 'opacity-100' : 'opacity-0'}`}>
       
       {/* D-PAD Area - Enable pointer events here */}
       <div 
         ref={dpadRef}
-        className="relative w-44 h-44 pointer-events-auto"
+        className="relative w-28 h-28 pointer-events-auto"
         style={{ touchAction: 'none' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -180,30 +190,30 @@ export const Controls: React.FC<ControlsProps> = ({ onInputStateChange, onAction
         onMouseDown={handleMouseDown}
       >
         {/* D-Pad Background */}
-        <div className="w-full h-full bg-zinc-900/40 rounded-full absolute top-0 left-0 border-2 border-zinc-800/50 backdrop-blur-[2px]" />
+        <div className="w-full h-full bg-zinc-900/30 rounded-full absolute top-0 left-0 border border-zinc-800/40 backdrop-blur-[1px]" />
         
         {/* Cross Shape Visuals */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-32 bg-zinc-800 rounded-md shadow-inner" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-12 bg-zinc-800 rounded-md shadow-inner" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-20 bg-zinc-800/80 rounded-md shadow-inner" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-8 bg-zinc-800/80 rounded-md shadow-inner" />
 
         {/* Buttons */}
-        <div className={`absolute top-2 left-1/2 -translate-x-1/2 w-12 h-14 rounded-t-md ${isPressed('UP') ? 'bg-zinc-600' : 'bg-transparent'} transition-colors`} />
-        <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-14 rounded-b-md ${isPressed('DOWN') ? 'bg-zinc-600' : 'bg-transparent'} transition-colors`} />
-        <div className={`absolute left-2 top-1/2 -translate-y-1/2 h-12 w-14 rounded-l-md ${isPressed('LEFT') ? 'bg-zinc-600' : 'bg-transparent'} transition-colors`} />
-        <div className={`absolute right-2 top-1/2 -translate-y-1/2 h-12 w-14 rounded-r-md ${isPressed('RIGHT') ? 'bg-zinc-600' : 'bg-transparent'} transition-colors`} />
+        <div className={`absolute top-1 left-1/2 -translate-x-1/2 w-8 h-9 rounded-t-md ${isPressed('UP') ? 'bg-zinc-600/80' : 'bg-transparent'} transition-colors`} />
+        <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-8 h-9 rounded-b-md ${isPressed('DOWN') ? 'bg-zinc-600/80' : 'bg-transparent'} transition-colors`} />
+        <div className={`absolute left-1 top-1/2 -translate-y-1/2 h-8 w-9 rounded-l-md ${isPressed('LEFT') ? 'bg-zinc-600/80' : 'bg-transparent'} transition-colors`} />
+        <div className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-9 rounded-r-md ${isPressed('RIGHT') ? 'bg-zinc-600/80' : 'bg-transparent'} transition-colors`} />
         
         {/* Center Dent */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-zinc-900 rounded-full opacity-50" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-zinc-900 rounded-full opacity-50" />
       </div>
 
       {/* Action Button - Enable pointer events here */}
-      <div className="flex items-end mb-4 mr-2 pointer-events-auto">
+      <div className="flex items-end mb-2 mr-1 pointer-events-auto">
         <button
             onTouchStart={handleAction}
             onMouseDown={handleAction}
-            className="w-24 h-24 rounded-full bg-blue-600 active:bg-blue-500 border-b-8 border-r-4 active:border-0 active:translate-y-2 border-blue-900 shadow-xl transition-all flex items-center justify-center group"
+            className="w-16 h-16 rounded-full bg-blue-600/90 active:bg-blue-500 border-b-4 border-r-2 active:border-0 active:translate-y-1 border-blue-900 shadow-lg transition-all flex items-center justify-center group"
         >
-            <span className="text-white font-bold text-lg drop-shadow-md group-active:scale-95">RUNK</span>
+            <span className="text-white font-bold text-sm drop-shadow-md group-active:scale-95">runk</span>
         </button>
       </div>
     </div>
