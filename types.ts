@@ -23,7 +23,8 @@ export enum ItemType {
   SPEED_BOOST = 1,
   STEALTH_CLOAK = 2,
   TIME_FREEZE = 3,
-  LORE_NOTE = 4
+  LORE_NOTE = 4,
+  SUNGLASSES = 5
 }
 
 export interface Entity {

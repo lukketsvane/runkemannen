@@ -4,14 +4,16 @@ Eit retro stealth-spel bygd med React og TypeScript der du må smyge deg innpå 
 
 ## 🎯 Spelemål
 
-**Mål:** Samle flest mogleg poeng ved å fullfør nivå før tida renn ut.
+**Mål:** Overlev så lenge som mogleg ved å halde ladinga oppe!
 
 ### Spelmekanikkar
 
-- **💙 Lad opp mana:** Smyg deg innpå jenter (blonde eller raude) for å lade opp "runkemeteret" (Mana). Må vere innan synslengd utan å bli oppdaga.
+- **💙 Lad opp mana:** Smyg deg innpå nakne jenter (blonde eller raude) på stranda for å lade opp "runkemeteret" (Mana). Må vere innan synslengd utan å bli oppdaga.
+- **⚡ Hades-stil:** Ladinga din vert gradvis tømd over tid. **Game over når ladinga når null!**
 - **💥 RUNK-knappen:** Når meteret er fullt (100%), trykk RUNK-knappen nært ein jente for å sanke 500 poeng og fullføre målet.
 - **👁️ Augeboksen:** Pass på den patrulerande augeboksen! Kontakt med auge fører til "distraksjon" og meteret vert tømd. Du mistar kontrollen i 3 sekund.
-- **⏱️ Tidsbegrensning:** Kvart nivå har ei tidsbegrensning. Fullfør alle mål før tida renn ut!
+- **🕶️ Solbriller:** Saml solbriller for ekstra stealth-evner!
+- **🏖️ Strandmiljø:** Nakne jenter på stranda – nokre badar, andre skifter, nokre gøymer seg bak tre.
 
 ## 🕹️ Kontroller
 
@@ -68,13 +70,13 @@ Eller koble repositoryet til Vercel via deira webgrensesnitt for automatisk depl
 
 ## 📝 Spellogikk
 
-Spelet består av fleire nivå med aukande vanskegrad:
+Spelet består av fleire djup (d1-d25) med aukande vanskegrad:
 - Fleire jenter å "jakte" på
-- Fleire augeboksar som patruljerer
+- Færre augeboksar (redusert fokus på fiender)
 - Meir komplekse hindringar
-- Kortare tidsbegrensningar
+- Raskare mana-tap
 
-Augeboksane patruljerer området og vil forfølgje deg dersom dei ser deg. Jentene vil røme vekk dersom dei oppdagar deg for nært. Taktikk og timing er avgjerande!
+Augeboksane patruljerer området og vil forfølgje deg dersom dei ser deg. Jentene vil røme vekk dersom dei oppdagar deg for nært. Taktikk og timing er avgjerande! Spelet er inspirert av Hades sitt djup-system.
 
 ## 📄 Lisens
 

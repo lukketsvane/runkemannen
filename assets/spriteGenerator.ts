@@ -63,28 +63,41 @@ const drawAlien = (ctx: CanvasRenderingContext2D, frame: number, dir: number) =>
     }
 };
 
-// Updated Pretty Girl Sprite - Pokemon Style
+// Beach Girl Sprite - Naked/Beach Style
 const drawGirl = (ctx: CanvasRenderingContext2D, frame: number, dir: number, variation: number) => {
     const skin = '#ffe0d0';
+    const skinShade = '#f0c0b0';
     const hair = variation === 0 ? '#f8d030' : '#d04020'; // Electric Yellow or Fire Red
-    const dress = variation === 0 ? '#f06090' : '#4090e0'; 
     const outline = '#402010'; // Dark brown outline
     
     const bounce = (frame === 1 || frame === 3) ? 1 : 0;
 
-    // Legs
-    ctx.fillStyle = '#111'; 
+    // Legs (skin-colored, naked)
+    ctx.fillStyle = skin; 
     if (dir === 0 || dir === 3) {
-        ctx.fillRect(6, 14, 1, 2);
-        ctx.fillRect(9, 14, 1, 2);
+        ctx.fillRect(6, 12, 2, 4, skin);
+        ctx.fillRect(9, 12, 2, 4, skin);
+        // Leg shading
+        ctx.fillRect(7, 13, 1, 3, skinShade);
+        ctx.fillRect(10, 13, 1, 3, skinShade);
     } else {
-         if (frame === 1) ctx.fillRect(6, 13, 2, 3);
-         else ctx.fillRect(8, 14, 2, 2);
+         if (frame === 1) {
+             ctx.fillRect(4, 11, 3, 5, skin);
+             ctx.fillRect(5, 12, 1, 4, skinShade);
+         } else {
+             ctx.fillRect(6, 12, 4, 4, skin);
+             ctx.fillRect(7, 13, 2, 3, skinShade);
+         }
     }
 
-    // Dress
-    drawRect(ctx, 5, 9 + bounce, 6, 5, dress);
-    drawRect(ctx, 4, 13 + bounce, 8, 2, dress);
+    // Body (naked, skin-colored)
+    drawRect(ctx, 5, 8 + bounce, 6, 5, skin);
+    // Body shading
+    drawRect(ctx, 6, 9 + bounce, 4, 4, skinShade);
+    
+    // Minimal bikini/censorship (tiny pixels)
+    const bikiniColor = variation === 0 ? '#f06090' : '#4090e0';
+    drawRect(ctx, 6, 10 + bounce, 4, 1, bikiniColor);
     
     // Head
     drawRect(ctx, 4, 2 + bounce, 8, 7, skin);
@@ -173,62 +186,68 @@ const drawEyeEnemy = (ctx: CanvasRenderingContext2D, frame: number, dir: number)
 // --- LEAF GREEN STYLE TILES ---
 
 const drawTree = (ctx: CanvasRenderingContext2D) => {
-    // A classic 32x32 RPG Tree Tile
+    // A beach rock/obstacle or palm tree
     
-    // Grass background first
+    // Sand background first
     drawFloor(ctx);
 
-    // Tree Top (Round)
-    const lightGreen = '#60a058';
-    const medGreen = '#408040';
-    const darkGreen = '#285030';
+    // Beach Rock/Palm Tree
+    const rockGray = '#909090';
+    const rockDark = '#606060';
+    const rockLight = '#b0b0b0';
     
-    // Main Body
-    ctx.fillStyle = medGreen;
+    // Main Rock Body
+    ctx.fillStyle = rockGray;
     ctx.beginPath();
-    ctx.arc(16, 14, 13, 0, Math.PI*2);
+    ctx.ellipse(16, 16, 10, 8, 0, 0, Math.PI*2);
     ctx.fill();
     
-    // Shadow Bottom
-    ctx.fillStyle = darkGreen;
+    // Shadow/depth
+    ctx.fillStyle = rockDark;
     ctx.beginPath();
-    ctx.arc(16, 16, 12, 0, Math.PI, false); // Bottom half
+    ctx.ellipse(16, 18, 9, 6, 0, 0, Math.PI*2);
     ctx.fill();
 
-    // Highlights Top
-    ctx.fillStyle = lightGreen;
+    // Highlights
+    ctx.fillStyle = rockLight;
     ctx.beginPath();
-    ctx.arc(16, 12, 10, Math.PI, 0, false); // Top half
+    ctx.ellipse(14, 13, 4, 3, 0, 0, Math.PI*2);
     ctx.fill();
     
-    // Trunk
-    ctx.fillStyle = '#503820'; // Brown
-    ctx.fillRect(12, 24, 8, 6);
-    ctx.fillStyle = '#302010'; // Dark Brown shadow
-    ctx.fillRect(12, 28, 8, 2);
+    // Bottom shadow on sand
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(16, 24, 11, 4, 0, 0, Math.PI*2);
+    ctx.fill();
 };
 
-// Grass Floor
+// Beach/Sand Floor
 const drawFloor = (ctx: CanvasRenderingContext2D) => {
-    // Base Grass
-    ctx.fillStyle = '#78c850'; // Classic LG Light Green
+    // Base Sand
+    ctx.fillStyle = '#f0d090'; // Sandy beach color
     ctx.fillRect(0,0,32,32);
     
-    // Texture (Little darker tufts)
-    ctx.fillStyle = '#60a058'; 
+    // Texture (darker sand patches)
+    ctx.fillStyle = '#d8b878'; 
     
-    // Tuft 1
-    ctx.fillRect(4, 4, 2, 2);
+    // Sand patch 1
+    ctx.fillRect(4, 4, 3, 2);
     ctx.fillRect(6, 2, 2, 2);
-    ctx.fillRect(8, 4, 2, 2);
+    ctx.fillRect(8, 5, 2, 1);
 
-    // Tuft 2
-    ctx.fillRect(20, 20, 2, 2);
-    ctx.fillRect(22, 18, 2, 2);
-    ctx.fillRect(24, 20, 2, 2);
+    // Sand patch 2
+    ctx.fillRect(20, 20, 2, 3);
+    ctx.fillRect(22, 18, 3, 2);
+    ctx.fillRect(24, 21, 2, 2);
+    
+    // Lighter highlights
+    ctx.fillStyle = '#fffae8';
+    ctx.fillRect(10, 10, 1, 1);
+    ctx.fillRect(15, 25, 1, 1);
+    ctx.fillRect(26, 8, 1, 1);
     
     // Subtle noise
-    ctx.fillStyle = 'rgba(0,0,0,0.03)';
+    ctx.fillStyle = 'rgba(200,180,140,0.05)';
     ctx.fillRect(0,0,32,1);
     ctx.fillRect(0,0,1,32);
 };
